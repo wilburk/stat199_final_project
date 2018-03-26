@@ -17,3 +17,9 @@ Statistical method:
 Multiple linear regression + Model Selection
 
 ## Section 3. Data
+TO DO: add dimensions and codebook to the README in this folder. Then print out the output of glimpse of your data frame.
+```{r}
+library(tidyverse)
+
+```
+

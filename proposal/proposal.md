@@ -18,3 +18,22 @@ Statistical method: Multiple linear regression + Model Selection
 
 Section 3. Data
 ---------------
+
+TO DO: add dimensions and codebook to the README in this folder. Then print out the output of glimpse of your data frame.
+
+``` r
+library(tidyverse)
+```
+
+    ## Warning: running command 'timedatectl' had status 1
+
+    ## ── Attaching packages ──────────────────────────── tidyverse 1.2.1 ──
+
+    ## ✔ ggplot2 2.2.1     ✔ purrr   0.2.4
+    ## ✔ tibble  1.4.1     ✔ dplyr   0.7.4
+    ## ✔ tidyr   0.7.2     ✔ stringr 1.2.0
+    ## ✔ readr   1.1.1     ✔ forcats 0.2.0
+
+    ## ── Conflicts ─────────────────────────────── tidyverse_conflicts() ──
+    ## ✖ dplyr::filter() masks stats::filter()
+    ## ✖ dplyr::lag()    masks stats::lag()
