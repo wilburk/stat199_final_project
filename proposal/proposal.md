@@ -6,7 +6,7 @@ March 25th, 2018
 Section 1. Introduction
 -----------------------
 
-What distinguishes an excellent restaurant from others. This dataset is from Kaggle, collected using the Zomato API. Zomato is a platform where people can contribute ratings of restaurants around the world.
+What distinguishes an "excellent" restaurant from others. (excellent defined by Zomato users) This dataset is from Kaggle, collected using the Zomato API. Zomato is a platform where people can contribute ratings of restaurants around the world.
 The variables are restuarant ID, resturant name, country code, city, address, locality, locality verbose, longitude, latitude, cuisines, average cost for two, currency, has table booking, has online delivery, is delivering now, switch to order, price range, aggregate rating, rating color, rating text, votes.
 
 Section 2. Data analysis plan
