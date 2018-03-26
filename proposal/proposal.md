@@ -14,7 +14,7 @@ Section 2. Data analysis plan
 
 The outcome is the rating text (categorical variable), and the predictors are cuisines, average cost for two(which we need to convert the currency to usd later), has online delivery, location (longitude and latitude).
 
-Statistical method: Multiple linear regression + Model Selection
+Statistical methods: Multiple linear regression + Model Selection Hypothesis testing Plotting/mapping of data points
 
 Section 3. Data
 ---------------
