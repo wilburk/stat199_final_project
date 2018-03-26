@@ -26,3 +26,9 @@ To support our hypothesis:
 We will need linear models with high R-squared values, hypothesis tests with p values below the significance level, and the map will show if regional patterns in rating exist as well as how the definition of an excellent restaurant varies geographically.
 
 ## Section 3. Data
+TO DO: add dimensions and codebook to the README in this folder. Then print out the output of glimpse of your data frame.
+```{r}
+library(tidyverse)
+
+```
+
