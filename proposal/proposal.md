@@ -6,8 +6,15 @@ March 25th, 2018
 Section 1. Introduction
 -----------------------
 
+What distinguishes an excellent restaurant from others. This dataset is from Kaggle, collected using the Zomato API. Zomato is a platform where people can contribute ratings of restaurants around the world.
+The variables are restuarant ID, resturant name, country code, city, address, locality, locality verbose, longitude, latitude, cuisines, average cost for two, currency, has table booking, has online delivery, is delivering now, switch to order, price range, aggregate rating, rating color, rating text, votes.
+
 Section 2. Data analysis plan
 -----------------------------
+
+The outcome is the rating text (categorical variable), and the predictors are cuisines, average cost for two(which we need to convert the currency to usd later), has online delivery, location (longitude and latitude).
+
+Statistical method: Multiple linear regression + Model Selection
 
 Section 3. Data
 ---------------
