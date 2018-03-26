@@ -18,4 +18,11 @@ Multiple linear regression + Model Selection
 Hypothesis testing
 Plotting/mapping of data points
 
+TODO: preliminary data analysis
+
+Hypothesis: there will be two types of "Excellent" restaurants, the first being affordable and the other being expensive and high-end. Additionally, restaurants with a larger number of votes will have a higher aggregate rating. 
+
+To support our hypothesis:
+We will need linear models with high R-squared values, hypothesis tests with p values below the significance level, and the map will show if regional patterns in rating exist as well as how the definition of an excellent restaurant varies geographically.
+
 ## Section 3. Data
