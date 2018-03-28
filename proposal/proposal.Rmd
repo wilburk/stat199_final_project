@@ -26,19 +26,30 @@ library(readxl)
 zomato <- read_csv("../data/zomato.csv", locale = locale(encoding = "latin1"))
 zomato <- clean_names(zomato)
 
-country_codes <- read_excel("~/Downloads/Country-Code.xlsx")
+country_codes <- read_excel("../data/Country-Code.xlsx")
 country_codes <- clean_names(country_codes)
+
+zomato_country <- zomato %>%
+  full_join(country_codes, by = "country_code")
 ```
 
 Now some preliminary exploratory data analysis:
-```{r count-avg-cost-for-2}
+```{r data-viz}
 zomato %>%
   filter(currency == "Dollar($)") %>%
   ggplot(mapping = aes(x = average_cost_for_two)) +
   geom_histogram()
 
-zomato %>%
-  ggplot(mapping = aes(x))
+
+zomato_country_cnt <- zomato_country %>%
+  count(country)
+zomato_country_cnt$country <- factor(zomato_country_cnt$country, 
+                                     levels = zomato_country_cnt$country[order(-zomato_country_cnt$n)])
+
+zomato_country_cnt %>%
+  ggplot(mapping = aes(y = log(n), x = country)) +
+  geom_col() + 
+  coord_flip()
 ```
 
 

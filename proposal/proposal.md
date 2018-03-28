@@ -16,7 +16,48 @@ The outcome is the rating text (categorical variable), and the predictors are cu
 
 Statistical methods: Multiple linear regression + Model Selection Hypothesis testing Plotting/mapping of data points
 
-TODO: preliminary data analysis
+First we'll load up the data.
+
+``` r
+library(tidyverse)
+library(janitor)
+library(readxl)
+zomato <- read_csv("../data/zomato.csv", locale = locale(encoding = "latin1"))
+zomato <- clean_names(zomato)
+
+country_codes <- read_excel("../data/Country-Code.xlsx")
+country_codes <- clean_names(country_codes)
+
+zomato_country <- zomato %>%
+  full_join(country_codes, by = "country_code")
+```
+
+Now some preliminary exploratory data analysis:
+
+``` r
+zomato %>%
+  filter(currency == "Dollar($)") %>%
+  ggplot(mapping = aes(x = average_cost_for_two)) +
+  geom_histogram()
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](proposal_files/figure-markdown_github/data-viz-1.png)
+
+``` r
+zomato_country_cnt <- zomato_country %>%
+  count(country)
+zomato_country_cnt$country <- factor(zomato_country_cnt$country, 
+                                     levels = zomato_country_cnt$country[order(-zomato_country_cnt$n)])
+
+zomato_country_cnt %>%
+  ggplot(mapping = aes(y = log(n), x = country)) +
+  geom_col() + 
+  coord_flip()
+```
+
+![](proposal_files/figure-markdown_github/data-viz-2.png)
 
 Hypothesis: there will be two types of "Excellent" restaurants, the first being affordable and the other being expensive and high-end. Additionally, restaurants with a larger number of votes will have a higher aggregate rating.
 
@@ -25,21 +66,30 @@ To support our hypothesis: We will need linear models with high R-squared values
 Section 3. Data
 ---------------
 
-TO DO: add dimensions and codebook to the README in this folder. Then print out the output of glimpse of your data frame.
-
 ``` r
-library(tidyverse)
+glimpse(zomato)
 ```
 
-    ## Warning: running command 'timedatectl' had status 1
-
-    ## ── Attaching packages ──────────────────────────── tidyverse 1.2.1 ──
-
-    ## ✔ ggplot2 2.2.1     ✔ purrr   0.2.4
-    ## ✔ tibble  1.4.1     ✔ dplyr   0.7.4
-    ## ✔ tidyr   0.7.2     ✔ stringr 1.2.0
-    ## ✔ readr   1.1.1     ✔ forcats 0.2.0
-
-    ## ── Conflicts ─────────────────────────────── tidyverse_conflicts() ──
-    ## ✖ dplyr::filter() masks stats::filter()
-    ## ✖ dplyr::lag()    masks stats::lag()
+    ## Observations: 9,551
+    ## Variables: 21
+    ## $ restaurant_id        <int> 6317637, 6304287, 6300002, 6318506, 63143...
+    ## $ restaurant_name      <chr> "Le Petit Souffle", "Izakaya Kikufuji", "...
+    ## $ country_code         <int> 162, 162, 162, 162, 162, 162, 162, 162, 1...
+    ## $ city                 <chr> "Makati City", "Makati City", "Mandaluyon...
+    ## $ address              <chr> "Third Floor, Century City Mall, Kalayaan...
+    ## $ locality             <chr> "Century City Mall, Poblacion, Makati Cit...
+    ## $ locality_verbose     <chr> "Century City Mall, Poblacion, Makati Cit...
+    ## $ longitude            <dbl> 121.02754, 121.01410, 121.05683, 121.0564...
+    ## $ latitude             <dbl> 14.56544, 14.55371, 14.58140, 14.58532, 1...
+    ## $ cuisines             <chr> "French, Japanese, Desserts", "Japanese",...
+    ## $ average_cost_for_two <int> 1100, 1200, 4000, 1500, 1500, 1000, 2000,...
+    ## $ currency             <chr> "Botswana Pula(P)", "Botswana Pula(P)", "...
+    ## $ has_table_booking    <chr> "Yes", "Yes", "Yes", "No", "Yes", "No", "...
+    ## $ has_online_delivery  <chr> "No", "No", "No", "No", "No", "No", "No",...
+    ## $ is_delivering_now    <chr> "No", "No", "No", "No", "No", "No", "No",...
+    ## $ switch_to_order_menu <chr> "No", "No", "No", "No", "No", "No", "No",...
+    ## $ price_range          <int> 3, 3, 4, 4, 4, 3, 4, 4, 4, 3, 3, 3, 3, 3,...
+    ## $ aggregate_rating     <dbl> 4.8, 4.5, 4.4, 4.9, 4.8, 4.4, 4.0, 4.2, 4...
+    ## $ rating_color         <chr> "Dark Green", "Dark Green", "Green", "Dar...
+    ## $ rating_text          <chr> "Excellent", "Excellent", "Very Good", "E...
+    ## $ votes                <int> 314, 591, 270, 365, 229, 336, 520, 677, 6...
