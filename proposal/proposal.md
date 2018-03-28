@@ -6,12 +6,11 @@ March 25th, 2018
 Section 1. Introduction
 -----------------------
 
-We are looking at a restaurant dataset from Kaggle, collected using the Zomato API.
-Zomato is a platform where people can contribute ratings of restaurants around the world.
-The general question we are looking at is along the lines of what distinguishes an "excellent" restaurant from others? What are some of characteristices that make up an excellent restaurant and whether they vary across regions and cuisines? (here excellent is based on the rating text variable in the dataset).
+We are looking at a restaurant dataset from Kaggle, collected using the Zomato API. Zomato is a platform where people can contribute ratings of restaurants around the world, and this dataset is a collection of all available ratings. Data was collected from the Zomato platform in the form of .json files.
 
-The variables recorded in this dataset are
-• Restaurant Id: Unique id of every restaurant across various cities of the world
+For our final project, we are investigating what distinguishes an "excellent"-rated restaurant from others? What are some of characteristics that define an excellent restaurant and do these qualities vary across regions and cuisines? For our purposes, "excellent" is defined as the rating text variable in the dataset. The rating of "excellent" is bestowed to restaurants with an aggregate rating of 4.5 or higher.
+
+The variables recorded in this dataset are: • Restaurant Id: Unique id of every restaurant across various cities of the world
 • Restaurant Name: Name of the restaurant
 • Country Code: Country in which restaurant is located
 • City: City in which restaurant is located
@@ -22,7 +21,7 @@ The variables recorded in this dataset are
 • Latitude: Latitude coordinate of the restaurant's location
 • Cuisines: Cuisines offered by the restaurant
 • Average Cost for two: Cost for two people in different currencies
-👫 • Currency: Currency of the country
+• Currency: Currency of the country
 • Has Table booking: yes/no
 • Has Online delivery: yes/ no
 • Is delivering: yes/ no
@@ -38,7 +37,7 @@ There is an auxiliary dataset with country code, and country name.
 Section 2. Data analysis plan
 -----------------------------
 
-The outcome we are interested in is the rating text (categorical variable), and the predictors are cuisines, average\_cost\_for\_two(which we need to convert the currency to USD later), has\_online\_delivery, location (longitude and latitude).
+The outcome we are interested in is the rating text (categorical variable), and the predictors are cuisines, average\_cost\_for\_two(which we need to convert the currency to USD later), has\_online\_delivery, and location (longitude and latitude).
 
 Statistical methods that we will be able to use in this project include: multiple linear regression & model selection, hypothesis testing, and plotting/mapping of data points.
 
