@@ -1,4 +1,4 @@
-PROJECT TITLE
+Final Project
 ================
 kimchi-stew
 March 25th, 2018
@@ -6,9 +6,34 @@ March 25th, 2018
 Section 1. Introduction
 -----------------------
 
-What distinguishes an "excellent" restaurant from others? (excellent defined by Zomato users). This dataset is from Kaggle, collected using the Zomato API. Zomato is a platform where people can contribute ratings of restaurants around the world.
+We are looking at a restaurant dataset from Kaggle, collected using the Zomato API.
+Zomato is a platform where people can contribute ratings of restaurants around the world.
+The general question we are looking at is along the lines of what distinguishes an "excellent" restaurant from others? What are some of characteristices that make up an excellent restaurant and whether they vary across regions and cuisines? (here excellent is based on the rating text variable in the dataset).
 
-The variables recorded in this dataset are restuarant ID, resturant name, country code, city, address, locality, locality verbose, longitude, latitude, cuisines, average cost for two, currency, has table booking, has online delivery, is delivering now, switch to order, price range, aggregate rating, rating color, rating text, votes. There is an auxiliary dataset with country code, and country name.
+The variables recorded in this dataset are
+• Restaurant Id: Unique id of every restaurant across various cities of the world
+• Restaurant Name: Name of the restaurant
+• Country Code: Country in which restaurant is located
+• City: City in which restaurant is located
+• Address: Address of the restaurant
+• Locality: Location in the city
+• Locality Verbose: Detailed description of the locality
+• Longitude: Longitude coordinate of the restaurant's location
+• Latitude: Latitude coordinate of the restaurant's location
+• Cuisines: Cuisines offered by the restaurant
+• Average Cost for two: Cost for two people in different currencies
+👫 • Currency: Currency of the country
+• Has Table booking: yes/no
+• Has Online delivery: yes/ no
+• Is delivering: yes/ no
+• Switch to order menu: yes/no
+• Price range: range of price of food
+• Aggregate Rating: Average rating out of 5
+• Rating color: depending upon the average rating color
+• Rating text: text on the basis of rating
+• Votes: Number of ratings casted by people
+
+There is an auxiliary dataset with country code, and country name.
 
 Section 2. Data analysis plan
 -----------------------------
@@ -23,6 +48,11 @@ First we'll load up the data.
 
 ``` r
 library(tidyverse)
+```
+
+    ## Warning: running command 'timedatectl' had status 1
+
+``` r
 library(janitor)
 library(readxl)
 
