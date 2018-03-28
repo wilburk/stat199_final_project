@@ -23,6 +23,11 @@ First we'll load up the data.
 
 ``` r
 library(tidyverse)
+```
+
+    ## Warning: running command 'timedatectl' had status 1
+
+``` r
 library(janitor)
 library(readxl)
 
