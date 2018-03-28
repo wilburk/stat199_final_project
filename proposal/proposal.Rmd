@@ -6,53 +6,78 @@ output: github_document
 ---
 
 ## Section 1. Introduction
-What distinguishes an "excellent" restaurant from others. (excellent defined by Zomato users)
-This dataset is from Kaggle, collected using the Zomato API. Zomato is a platform where people can contribute ratings of restaurants around the world.  
-The variables are restuarant ID, resturant name, country code, city, address, locality, locality verbose, longitude, latitude, cuisines, average cost for two, currency, has table booking, has online delivery, is delivering now, switch to order, price range, aggregate rating, rating color, rating text, votes.
+What distinguishes an "excellent" restaurant from others? (excellent defined by Zomato users). This dataset is from Kaggle, collected using the Zomato API. Zomato is a platform where people can contribute ratings of restaurants around the world.  
+
+The variables recorded in this dataset are restuarant ID, resturant name, country code, city, address, locality, locality verbose, longitude, latitude, cuisines, average cost for two, currency, has table booking, has online delivery, is delivering now, switch to order, price range, aggregate rating, rating color, rating text, votes. There is an auxiliary dataset with country code, and country name.
 
 ## Section 2. Data analysis plan
-The outcome is the rating text (categorical variable), and the predictors are cuisines, average cost for two(which we need to convert the currency to usd later), has online delivery, location (longitude and latitude). 
+The outcome we are interested in is the rating text (categorical variable), and the predictors are cuisines, average_cost_for_two(which we need to convert the currency to USD later), has_online_delivery, location (longitude and latitude). 
 
-Statistical methods: 
-Multiple linear regression + Model Selection
-Hypothesis testing
-Plotting/mapping of data points
+Statistical methods that we will be able to use in this project include: multiple linear regression & model selection, hypothesis testing, and plotting/mapping of data points.
+
+### Preliminary Data Analysis
 
 First we'll load up the data.
-```{r load-data, message=FALSE}
+```{r load-data, message=FALSE, echo=FALSE}
 library(tidyverse)
 library(janitor)
 library(readxl)
+
 zomato <- read_csv("../data/zomato.csv", locale = locale(encoding = "latin1"))
 zomato <- clean_names(zomato)
 
 country_codes <- read_excel("../data/Country-Code.xlsx")
 country_codes <- clean_names(country_codes)
 
-zomato_country <- zomato %>%
+# joining together files to get country names with rest of data
+zomato <- zomato %>%
   full_join(country_codes, by = "country_code")
 ```
 
 Now some preliminary exploratory data analysis:
-```{r data-viz}
+
+```{r summary-stats,echo=FALSE}
 zomato %>%
-  filter(currency == "Dollar($)") %>%
-  ggplot(mapping = aes(x = average_cost_for_two)) +
-  geom_histogram()
-
-
-zomato_country_cnt <- zomato_country %>%
-  count(country)
-zomato_country_cnt$country <- factor(zomato_country_cnt$country, 
-                                     levels = zomato_country_cnt$country[order(-zomato_country_cnt$n)])
-
-zomato_country_cnt %>%
-  ggplot(mapping = aes(y = log(n), x = country)) +
-  geom_col() + 
-  coord_flip()
+  group_by(country) %>%
+  summarise(median_rating = median(aggregate_rating),
+            mean_price_range = round(mean(price_range),1)) %>%
+  arrange(desc(median_rating))
 ```
 
+We can start looking at some summary statistics of our numerical variables to get an idea of the typical values for each of these variables and if these vary siginificantly from country to country. The median ratings range from 3.1 to 4.5 (out of 5) by country, while price ranges from 1.7 to 3.6 (out of 4) by country. India has both the lowest median rating and lowest mean price range off all of the countries.
 
+Next we can look at some visualizations.
+
+```{r cost-cnt,echo=FALSE}
+zomato_us <- zomato %>%
+  filter(currency == "Dollar($)")
+
+zomato_us %>%
+  filter(average_cost_for_two < 100) %>%
+  ggplot(mapping = aes(x = average_cost_for_two)) +
+  geom_histogram(bins = 15) +
+  labs(x = "Avg Cost for Two", y = "Count", title = "Multiple Restaurant Price Ranges")
+
+```
+
+I adjusted the graph to get rid of some of the outliers that were \$100+. From this distribution we can already see that there is some price stratification, with restaurants clustering around \$5, \$25, and \$40. This pattern will likely show up in other metrics and seeing this pattern now will help us make sense of the distributions later. 
+
+```{r country-cnt,echo=FALSE}
+# reorder levels of factor by counts
+zomato_cnt <- zomato %>%
+  count(country)
+zomato_cnt$country <- factor(zomato_cnt$country, levels = zomato_cnt$country[order(-zomato_cnt$n)])
+
+zomato_cnt %>%
+  ggplot(mapping = aes(y = n, x = country)) +
+  geom_col() + 
+  coord_flip() +
+  labs(x = "Country", y = "Count", title = "Breakdown of data by country")
+```
+
+The vast majority of our data is from India. This is good to know because consumer behaviors vary greatly by country. If we find any trends, they may only generalize to India, and not to the other countries we have information on. We do have a sizable amount of data from the US (~500 restaurants) so we may be able to find statistically significant results there as well. 
+
+### Hypotheses
 
 Hypothesis: there will be two types of "Excellent" restaurants, the first being affordable and the other being expensive and high-end. Additionally, restaurants with a larger number of votes will have a higher aggregate rating. 
 
@@ -61,7 +86,7 @@ We will need linear models with high R-squared values, hypothesis tests with p v
 
 ## Section 3. Data
 
-```{r glimpse-data}
+```{r glimpse-data,echo=FALSE}
 glimpse(zomato)
 ```
 

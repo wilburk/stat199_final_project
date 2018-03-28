@@ -6,58 +6,55 @@ March 25th, 2018
 Section 1. Introduction
 -----------------------
 
-What distinguishes an "excellent" restaurant from others. (excellent defined by Zomato users) This dataset is from Kaggle, collected using the Zomato API. Zomato is a platform where people can contribute ratings of restaurants around the world.
-The variables are restuarant ID, resturant name, country code, city, address, locality, locality verbose, longitude, latitude, cuisines, average cost for two, currency, has table booking, has online delivery, is delivering now, switch to order, price range, aggregate rating, rating color, rating text, votes.
+What distinguishes an "excellent" restaurant from others? (excellent defined by Zomato users). This dataset is from Kaggle, collected using the Zomato API. Zomato is a platform where people can contribute ratings of restaurants around the world.
+
+The variables recorded in this dataset are restuarant ID, resturant name, country code, city, address, locality, locality verbose, longitude, latitude, cuisines, average cost for two, currency, has table booking, has online delivery, is delivering now, switch to order, price range, aggregate rating, rating color, rating text, votes. There is an auxiliary dataset with country code, and country name.
 
 Section 2. Data analysis plan
 -----------------------------
 
-The outcome is the rating text (categorical variable), and the predictors are cuisines, average cost for two(which we need to convert the currency to usd later), has online delivery, location (longitude and latitude).
+The outcome we are interested in is the rating text (categorical variable), and the predictors are cuisines, average\_cost\_for\_two(which we need to convert the currency to USD later), has\_online\_delivery, location (longitude and latitude).
 
-Statistical methods: Multiple linear regression + Model Selection Hypothesis testing Plotting/mapping of data points
+Statistical methods that we will be able to use in this project include: multiple linear regression & model selection, hypothesis testing, and plotting/mapping of data points.
+
+### Preliminary Data Analysis
 
 First we'll load up the data.
 
-``` r
-library(tidyverse)
-library(janitor)
-library(readxl)
-zomato <- read_csv("../data/zomato.csv", locale = locale(encoding = "latin1"))
-zomato <- clean_names(zomato)
-
-country_codes <- read_excel("../data/Country-Code.xlsx")
-country_codes <- clean_names(country_codes)
-
-zomato_country <- zomato %>%
-  full_join(country_codes, by = "country_code")
-```
-
 Now some preliminary exploratory data analysis:
 
-``` r
-zomato %>%
-  filter(currency == "Dollar($)") %>%
-  ggplot(mapping = aes(x = average_cost_for_two)) +
-  geom_histogram()
-```
+    ## # A tibble: 15 x 3
+    ##    country        median_rating mean_price_range
+    ##    <chr>                  <dbl>            <dbl>
+    ##  1 Phillipines             4.50             3.40
+    ##  2 Indonesia               4.30             3.00
+    ##  3 New Zealand             4.30             3.10
+    ##  4 Turkey                  4.30             2.80
+    ##  5 UAE                     4.25             3.20
+    ##  6 South Africa            4.20             3.60
+    ##  7 Brazil                  4.15             3.40
+    ##  8 United Kingdom          4.10             2.80
+    ##  9 Qatar                   4.00             3.60
+    ## 10 Sri Lanka               4.00             2.80
+    ## 11 United States           4.00             2.00
+    ## 12 Singapore               3.75             3.60
+    ## 13 Australia               3.70             2.10
+    ## 14 Canada                  3.50             2.50
+    ## 15 India                   3.10             1.70
 
-    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+We can start looking at some summary statistics of our numerical variables to get an idea of the typical values for each of these variables and if these vary siginificantly from country to country. The median ratings range from 3.1 to 4.5 (out of 5) by country, while price ranges from 1.7 to 3.6 (out of 4) by country. India has both the lowest median rating and lowest mean price range off all of the countries.
 
-![](proposal_files/figure-markdown_github/data-viz-1.png)
+Next we can look at some visualizations.
 
-``` r
-zomato_country_cnt <- zomato_country %>%
-  count(country)
-zomato_country_cnt$country <- factor(zomato_country_cnt$country, 
-                                     levels = zomato_country_cnt$country[order(-zomato_country_cnt$n)])
+![](proposal_files/figure-markdown_github/cost-cnt-1.png)
 
-zomato_country_cnt %>%
-  ggplot(mapping = aes(y = log(n), x = country)) +
-  geom_col() + 
-  coord_flip()
-```
+I adjusted the graph to get rid of some of the outliers that were $100+. From this distribution we can already see that there is some price stratification, with restaurants clustering around $5, $25, and $40. This pattern will likely show up in other metrics and seeing this pattern now will help us make sense of the distributions later.
 
-![](proposal_files/figure-markdown_github/data-viz-2.png)
+![](proposal_files/figure-markdown_github/country-cnt-1.png)
+
+The vast majority of our data is from India. This is good to know because consumer behaviors vary greatly by country. If we find any trends, they may only generalize to India, and not to the other countries we have information on. We do have a sizable amount of data from the US (~500 restaurants) so we may be able to find statistically significant results there as well.
+
+### Hypotheses
 
 Hypothesis: there will be two types of "Excellent" restaurants, the first being affordable and the other being expensive and high-end. Additionally, restaurants with a larger number of votes will have a higher aggregate rating.
 
@@ -66,15 +63,11 @@ To support our hypothesis: We will need linear models with high R-squared values
 Section 3. Data
 ---------------
 
-``` r
-glimpse(zomato)
-```
-
     ## Observations: 9,551
-    ## Variables: 21
+    ## Variables: 22
     ## $ restaurant_id        <int> 6317637, 6304287, 6300002, 6318506, 63143...
     ## $ restaurant_name      <chr> "Le Petit Souffle", "Izakaya Kikufuji", "...
-    ## $ country_code         <int> 162, 162, 162, 162, 162, 162, 162, 162, 1...
+    ## $ country_code         <dbl> 162, 162, 162, 162, 162, 162, 162, 162, 1...
     ## $ city                 <chr> "Makati City", "Makati City", "Mandaluyon...
     ## $ address              <chr> "Third Floor, Century City Mall, Kalayaan...
     ## $ locality             <chr> "Century City Mall, Poblacion, Makati Cit...
@@ -93,3 +86,4 @@ glimpse(zomato)
     ## $ rating_color         <chr> "Dark Green", "Dark Green", "Green", "Dar...
     ## $ rating_text          <chr> "Excellent", "Excellent", "Very Good", "E...
     ## $ votes                <int> 314, 591, 270, 365, 229, 336, 520, 677, 6...
+    ## $ country              <chr> "Phillipines", "Phillipines", "Phillipine...
