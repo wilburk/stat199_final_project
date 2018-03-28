@@ -18,7 +18,7 @@ Statistical methods that we will be able to use in this project include: multipl
 ### Preliminary Data Analysis
 
 First we'll load up the data.
-```{r load-data, message=FALSE, echo=FALSE}
+```{r load-data, message=FALSE}
 library(tidyverse)
 library(janitor)
 library(readxl)
@@ -36,7 +36,7 @@ zomato <- zomato %>%
 
 Now some preliminary exploratory data analysis:
 
-```{r summary-stats,echo=FALSE}
+```{r summary-stats}
 zomato %>%
   group_by(country) %>%
   summarise(median_rating = median(aggregate_rating),
@@ -48,7 +48,7 @@ We can start looking at some summary statistics of our numerical variables to ge
 
 Next we can look at some visualizations.
 
-```{r cost-cnt,echo=FALSE}
+```{r cost-cnt}
 zomato_us <- zomato %>%
   filter(currency == "Dollar($)")
 
@@ -62,7 +62,7 @@ zomato_us %>%
 
 I adjusted the graph to get rid of some of the outliers that were \$100+. From this distribution we can already see that there is some price stratification, with restaurants clustering around \$5, \$25, and \$40. This pattern will likely show up in other metrics and seeing this pattern now will help us make sense of the distributions later. 
 
-```{r country-cnt,echo=FALSE}
+```{r country-cnt}
 # reorder levels of factor by counts
 zomato_cnt <- zomato %>%
   count(country)
@@ -86,7 +86,7 @@ We will need linear models with high R-squared values, hypothesis tests with p v
 
 ## Section 3. Data
 
-```{r glimpse-data,echo=FALSE}
+```{r glimpse-data}
 glimpse(zomato)
 ```
 

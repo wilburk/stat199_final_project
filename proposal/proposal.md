@@ -21,7 +21,31 @@ Statistical methods that we will be able to use in this project include: multipl
 
 First we'll load up the data.
 
+``` r
+library(tidyverse)
+library(janitor)
+library(readxl)
+
+zomato <- read_csv("../data/zomato.csv", locale = locale(encoding = "latin1"))
+zomato <- clean_names(zomato)
+
+country_codes <- read_excel("../data/Country-Code.xlsx")
+country_codes <- clean_names(country_codes)
+
+# joining together files to get country names with rest of data
+zomato <- zomato %>%
+  full_join(country_codes, by = "country_code")
+```
+
 Now some preliminary exploratory data analysis:
+
+``` r
+zomato %>%
+  group_by(country) %>%
+  summarise(median_rating = median(aggregate_rating),
+            mean_price_range = round(mean(price_range),1)) %>%
+  arrange(desc(median_rating))
+```
 
     ## # A tibble: 15 x 3
     ##    country        median_rating mean_price_range
@@ -46,9 +70,33 @@ We can start looking at some summary statistics of our numerical variables to ge
 
 Next we can look at some visualizations.
 
+``` r
+zomato_us <- zomato %>%
+  filter(currency == "Dollar($)")
+
+zomato_us %>%
+  filter(average_cost_for_two < 100) %>%
+  ggplot(mapping = aes(x = average_cost_for_two)) +
+  geom_histogram(bins = 15) +
+  labs(x = "Avg Cost for Two", y = "Count", title = "Multiple Restaurant Price Ranges")
+```
+
 ![](proposal_files/figure-markdown_github/cost-cnt-1.png)
 
 I adjusted the graph to get rid of some of the outliers that were $100+. From this distribution we can already see that there is some price stratification, with restaurants clustering around $5, $25, and $40. This pattern will likely show up in other metrics and seeing this pattern now will help us make sense of the distributions later.
+
+``` r
+# reorder levels of factor by counts
+zomato_cnt <- zomato %>%
+  count(country)
+zomato_cnt$country <- factor(zomato_cnt$country, levels = zomato_cnt$country[order(-zomato_cnt$n)])
+
+zomato_cnt %>%
+  ggplot(mapping = aes(y = n, x = country)) +
+  geom_col() + 
+  coord_flip() +
+  labs(x = "Country", y = "Count", title = "Breakdown of data by country")
+```
 
 ![](proposal_files/figure-markdown_github/country-cnt-1.png)
 
@@ -62,6 +110,10 @@ To support our hypothesis: We will need linear models with high R-squared values
 
 Section 3. Data
 ---------------
+
+``` r
+glimpse(zomato)
+```
 
     ## Observations: 9,551
     ## Variables: 22
