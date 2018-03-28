@@ -18,7 +18,19 @@ Multiple linear regression + Model Selection
 Hypothesis testing
 Plotting/mapping of data points
 
-TODO: preliminary data analysis
+Preliminary exploratory data analysis:
+```{r explore-data, message=FALSE}
+library(tidyverse)
+library(janitor)
+zomato <- read_csv("../data/zomato.csv", locale = locale(encoding = "latin1"))
+zomato <- clean_names(zomato)
+
+zomato %>%
+  filter(currency == "Dollar($)") %>%
+  ggplot(mapping = aes(x = average_cost_for_two)) +
+  geom_histogram()
+```
+
 
 Hypothesis: there will be two types of "Excellent" restaurants, the first being affordable and the other being expensive and high-end. Additionally, restaurants with a larger number of votes will have a higher aggregate rating. 
 
@@ -27,10 +39,7 @@ We will need linear models with high R-squared values, hypothesis tests with p v
 
 ## Section 3. Data
 
-```{r}
-library(tidyverse)
-zomato <- read_csv("../data/zomato.csv", locale = locale(encoding = "latin1"))
+```{r glimpse-data}
 glimpse(zomato)
-
 ```
 
