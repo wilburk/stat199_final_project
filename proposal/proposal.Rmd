@@ -18,18 +18,29 @@ Multiple linear regression + Model Selection
 Hypothesis testing
 Plotting/mapping of data points
 
-Preliminary exploratory data analysis:
-```{r explore-data, message=FALSE}
+First we'll load up the data.
+```{r load-data, message=FALSE}
 library(tidyverse)
 library(janitor)
+library(readxl)
 zomato <- read_csv("../data/zomato.csv", locale = locale(encoding = "latin1"))
 zomato <- clean_names(zomato)
 
+country_codes <- read_excel("~/Downloads/Country-Code.xlsx")
+country_codes <- clean_names(country_codes)
+```
+
+Now some preliminary exploratory data analysis:
+```{r count-avg-cost-for-2}
 zomato %>%
   filter(currency == "Dollar($)") %>%
   ggplot(mapping = aes(x = average_cost_for_two)) +
   geom_histogram()
+
+zomato %>%
+  ggplot(mapping = aes(x))
 ```
+
 
 
 Hypothesis: there will be two types of "Excellent" restaurants, the first being affordable and the other being expensive and high-end. Additionally, restaurants with a larger number of votes will have a higher aggregate rating. 
