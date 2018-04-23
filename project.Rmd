@@ -10,23 +10,14 @@ output: github_document
 ```{r load-packages-data}
 library(stringr)
 library(tidyverse)
-library(VIM)
-library(jsonlite)
 library(broom)
-yelp <- stream_in(file("yelp-data/business.json"), flatten = TRUE)
+
+# run load-data.csv first
+food <- read_csv("data/food.csv")
+food_small <- read_csv("data/food-small.csv")
 ```
 
-```{r narrow-down-restaurants}
-
-# clean up categories data, filter by restaurants
-food <- yelp %>% 
-  mutate(categories = str_remove(categories,'c\\("'), 
-         categories = str_remove(categories, '"\\)'),
-         categories = str_replace_all(categories, '", "', ", "),
-         categories = str_to_lower(categories)) %>% 
-  filter(str_detect(categories, "food | restaurants"))
-  
-```
+### EDA 
 
 ```{r}
 
@@ -36,10 +27,6 @@ food %>%
   group_by(attributes.GoodForKids, attributes.Alcohol) %>% 
   summarise(mean = mean(stars),
             n = n())
-
-# make smaller table
-food_small <- food %>% 
-  select(name, neighborhood, address, city, state, postal_code, latitude, longitude, stars, review_count, categories) 
 
 # get top # cities
 food_small %>% 
@@ -77,7 +64,7 @@ tidy(kmns)
 ggplot(toronto_neighborhood, aes(x = latitude, y = longitude, color = postal_code_short)) +
   geom_point()
 ```
-
+### kmeans
 
 ```{r}
 # kmeans exploratory analysis
