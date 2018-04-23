@@ -26,6 +26,10 @@ yelp_review <- read_csv("yelp-dataset-csv/yelp_review.csv", n_max = 10000)
 
 ```{r}
 
+# join with attributes
+business %>% 
+  inner_join(business_attr, by = "business_id")
+
 ```
 
 
