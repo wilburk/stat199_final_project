@@ -22,6 +22,11 @@ business_hours <- read_csv("yelp-dataset-csv/yelp_business_hours.csv")
 yelp_review <- read_csv("yelp-dataset-csv/yelp_review.csv", n_max = 10000)
 food <- business %>% 
   filter(str_detect(categories, "Food|Restaurants"))
+food_ids <- food %>% 
+  select(business_id) %>% 
+  pull()
+food_attr <- business_attr %>% 
+  filter(business_id %in% food_ids)
 ```
 
 ### Miles
