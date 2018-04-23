@@ -31,21 +31,50 @@ food_attr <- business_attr %>%
 
 ### Miles
 
+
 ```{r}
-
 #join with attributes
-business %>%
-  inner_join(business_attr, by = "business_id")
+# business %>%
+#   inner_join(business_attr, by = "business_id")
 
+food_attr <- food_attr %>% 
+  select(-starts_with("Hair"))
+
+food_attr_temp <- food_attr %>% 
+  select(-business_id)
+
+food_attr_temp[food_attr_temp == "Na"] <- 0
+#food_attr_temp[food_attr_temp != 0] <- 1
+
+test <- food_attr_temp %>% 
+  summarise_all(funs(sum(. == "True"))) %>% 
+  gather(attribute, true, 1:ncol(.))
+
+food_attr_temp %>% 
+  summarise_all(funs(sum(. == "False"))) %>% 
+  gather(attribute, false, 1:ncol(.)) %>% 
+  inner_join(test, by = "attribute") %>% 
+  mutate(total = false + true,
+         perc_true = round(true / (false + true),2)) %>% 
+  filter(total > 20, true > 20) %>% 
+  arrange(desc(total))
+
+
+
+```
+
+```{r}
 
 
 
 # ratings by alcohol & good for kids
-# food %>% 
-#   filter(!is.na(attributes.Alcohol), !is.na(attributes.GoodForKids)) %>% 
-#   group_by(attributes.GoodForKids, attributes.Alcohol) %>% 
-#   summarise(mean = mean(stars),
-#             n = n())
+food_attr %>%
+  select(Alcohol, GoodForKids, business_id) %>% 
+  filter(!is.na(Alcohol), !is.na(GoodForKids)) %>%
+  inner_join(food, by = "business_id") %>% 
+  group_by(GoodForKids, Alcohol) %>%
+  summarise(mean = mean(stars),
+            n = n())
 
 # get top # cities
 food %>% 
