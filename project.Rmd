@@ -10,7 +10,9 @@ output: github_document
 ```{r load-packages-data}
 library(stringr)
 library(tidyverse)
-library('jsonlite')
+library(VIM)
+library(jsonlite)
+library(broom)
 yelp <- stream_in(file("yelp-data/business.json"), flatten = TRUE)
 ```
 
@@ -24,5 +26,81 @@ food <- yelp %>%
          categories = str_to_lower(categories)) %>% 
   filter(str_detect(categories, "food | restaurants"))
   
+```
+
+```{r}
+
+# ratings by alcohol & good for kids
+food %>% 
+  filter(!is.na(attributes.Alcohol), !is.na(attributes.GoodForKids)) %>% 
+  group_by(attributes.GoodForKids, attributes.Alcohol) %>% 
+  summarise(mean = mean(stars),
+            n = n())
+
+# make smaller table
+food_small <- food %>% 
+  select(name, neighborhood, address, city, state, postal_code, latitude, longitude, stars, review_count, categories) 
+
+# get top # cities
+food_small %>% 
+  count(city) %>% 
+  arrange(desc(n))
+
+# filter for toronto, non null neighborhoods
+toronto_neighborhood <- food_small %>% 
+  filter(city == "Toronto", neighborhood != "")
+
+# look at top neighborhoods
+toronto_neighborhood %>%
+  count(neighborhood) %>% 
+  arrange(desc(n))
+
+# aggregate postal codes (heirarchical structure so just took two few numbers)
+toronto_neighborhood <- toronto_neighborhood %>%
+  mutate(postal_code_short = substr(postal_code, 1 , 2))
+
+# summary stats by neighborhood
+toronto_neighborhood %>% 
+  group_by(neighborhood) %>% 
+  summarise(mean = mean(stars), n = n()) %>% 
+  filter(n > 10) %>% 
+  arrange(desc(mean))
+
+# kmeans by attributes 7 through 10
+kmns <- kmeans(toronto_neighborhood[7:10], 10)
+
+# view kmeans results
+head(augment(kmns, toronto_neighborhood))
+tidy(kmns)
+
+# view postal codes in space
+ggplot(toronto_neighborhood, aes(x = latitude, y = longitude, color = postal_code_short)) +
+  geom_point()
+```
+
+
+```{r}
+# kmeans exploratory analysis
+kmns <- data.frame(k=1:9) %>% 
+  group_by(k) %>% 
+  do(kmns=kmeans(toronto_neighborhood[7:8], .$k))
+
+clusters <- kmns %>%
+    group_by(k) %>%
+    do(tidy(.$kmns[[1]]))
+
+assignments <- kmns %>%
+    group_by(k) %>%
+    do(augment(.$kmns[[1]], toronto_neighborhood))
+
+clusterings <- kmns %>%
+    group_by(k) %>%
+    do(glance(.$kmns[[1]]))
+
+p1 <- ggplot(assignments, aes(latitude, longitude)) +
+    geom_point(aes(color=.cluster)) +
+    facet_wrap(~ k)
+
+p1
 ```
 
