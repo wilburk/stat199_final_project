@@ -17,7 +17,7 @@ food <- read_csv("data/food.csv")
 food_small <- read_csv("data/food-small.csv")
 ```
 
-### EDA 
+### EDA -- Miles
 
 ```{r}
 
@@ -90,4 +90,10 @@ p1 <- ggplot(assignments, aes(latitude, longitude)) +
 
 p1
 ```
+
+### EDA -- Katie
+
+
+### EDA -- Ivy
+
 
