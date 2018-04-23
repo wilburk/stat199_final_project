@@ -1,0 +1,47 @@
+---
+title: "PROJECT TITLE"
+author: "Kimchi Stew"
+date: "4/23/2018"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Load Packages & Data
+
+```{r load-packages-data}
+library(stringr)
+library(tidyverse)
+library(broom)
+
+business <- read_csv("yelp-dataset-csv/yelp_business.csv")
+business_attr <- read_csv("yelp-dataset-csv/yelp_business_attributes.csv")
+business_hours <- read_csv("yelp-dataset-csv/yelp_business_hours.csv")
+yelp_review <- read_csv("yelp-dataset-csv/yelp_review.csv", n_max = 10000)
+```
+
+### Miles
+
+```{r}
+
+```
+
+
+### Katie
+
+```{r}
+
+```
+
+
+### Ivy
+
+```{r}
+
+```
+
+
+
+
