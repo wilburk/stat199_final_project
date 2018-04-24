@@ -37,6 +37,17 @@ food_ids <- food %>%
   pull()
 food_attr <- business_attr %>% 
   filter(business_id %in% food_ids)
+
+
+
+
+food_attr %>% 
+  inner_join(food, by = "business_id") %>% 
+  select(categories, HasTV) %>% 
+  filter(HasTV == "full_bar")
+
+food_attr %>% 
+  count(GoodForKids)
 ```
 
 
@@ -45,9 +56,6 @@ food_attr <- business_attr %>%
 
 ```{r}
 # look at column stats
-
-food_attr <- food_attr %>% 
-  select(-starts_with("Hair"))
 
 food_attr_temp <- food_attr %>% 
   select(-business_id)

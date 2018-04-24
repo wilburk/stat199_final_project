@@ -20,4 +20,6 @@ yelp_checkin.csv
 yelp_review.csv
 yelp_tip.csv
 yelp_user.csv
+food-attributes.csv
+food-hours.csv
 

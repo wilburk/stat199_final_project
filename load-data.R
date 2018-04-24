@@ -11,31 +11,41 @@ yelp <- stream_in(file("yelp-data/business.json"), flatten = TRUE)
 yelp <- yelp %>% 
   mutate(categories = str_remove(categories,'c\\("'), 
          categories = str_remove(categories, '"\\)'),
-         categories = str_replace_all(categories, '", "', ", "),
+         categories = str_replace_all(categories, '", "', ","),
          categories = str_to_lower(categories))
 
 write_csv(yelp, "data/yelp.csv")
 
 food <- yelp %>% 
-  filter(str_detect(categories, "food | restaurants"))
+  filter(str_detect(categories, "food|restaurants")) %>% 
+  mutate(categories = str_remove(categories, "restaurants,"),
+       categories = str_remove(categories, ",restaurants"),
+       categories = str_remove(categories, "food,"),
+       categories = str_remove(categories, ",food"))
 
-write_csv(food, "data/food.csv")
+food %>% 
+  select(1,14:94) %>% 
+  rename_at(vars(2:82), funs(str_remove(.,"attributes."))) %>% 
+  select(-starts_with("Hair"), -AcceptsInsurance) %>% 
+  write_csv("data/food-attributes.csv")
 
-# make smaller table
-food_small <- food %>% 
-  select(name, neighborhood, address, city, state, postal_code, latitude, longitude, stars, review_count, categories) 
+food %>%
+  select(1,95:101) %>% 
+  write_csv("data/food-hours.csv")
 
-write_csv(food_small, "data/food-small.csv")
+food %>%
+  select(1:13) %>% 
+  write_csv("data/food.csv")
 
 ### reviews data
 
-reviews <- stream_in(file("yelp-data/review.json"), flatten = TRUE)
-
-biz_id <- food_small %>% 
-  select(business_id) %>% 
-  pull()
-
-reviews_food <- reviews %>%
-  filter(business_id %in% biz_id)
-
-write_csv(reviews_food, "data/reviews-food" )
+# reviews <- stream_in(file("yelp-data/review.json"), flatten = TRUE)
+# 
+# biz_id <- food_small %>% 
+#   select(business_id) %>% 
+#   pull()
+# 
+# reviews_food <- reviews %>%
+#   filter(business_id %in% biz_id)
+# 
+# write_csv(reviews_food, "data/reviews-food" )
