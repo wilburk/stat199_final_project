@@ -112,9 +112,25 @@ p1
 ```
 ### Katie
 
-```{r}
-
+```{r parking_attr_of_businesses}
+bus_park <- food_attr  
+bus_park[bus_park == "Na"] <- NA
+bus_park %>% 
+  select(BusinessParking_street, BusinessParking_validated, BusinessParking_lot, BusinessParking_valet) %>% 
+  drop_na()
 ```
+```{r}
+users <- read_csv("yelp-dataset-csv/yelp_user.csv")
+```
+```{r}
+top_food <- food %>% 
+  select(name, city, state, stars, categories) %>% 
+  filter(stars >= 3.5) 
+(top_food %>% 
+  group_by(state)) %>% 
+  count(stars)
+```
+
 
 
 ### Ivy
