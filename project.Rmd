@@ -12,14 +12,70 @@ library(stringr)
 library(tidyverse)
 library(broom)
 
-# run load-data.csv first
+# run load-data.R first
 food <- read_csv("data/food.csv")
-food_small <- read_csv("data/food-small.csv")
+food_attr <- read_csv("data/food-attributes.csv") 
+food_hours <- read_csv("data/food-hours.csv")
 ```
+
+```{r}
+# food1 %>% 
+#   filter(!is.na(attributes.NoiseLevel)) 
+# 
+# food1 %>%
+#   filter(attributes.Alcohol != "full_bar") %>% 
+#   select(attributes.Alcohol, categories)
+# 
+# food1 %>% 
+#   count(attributes.RestaurantsPriceRange2)
+```
+
 
 ### EDA -- Miles
 
 ```{r}
+food_attr_temp <- food_attr %>% 
+  select(-business_id)
+
+food_attr_temp[is.na(food_attr_temp)] <- 0
+food_attr_temp[food_attr_temp != 0] <- 1
+
+# test <- food_attr_temp %>% 
+#   summarise_all(funs(sum(. == "True"))) %>% 
+#   gather(attribute, true, 1:ncol(.))
+# 
+# food_attr_temp %>% 
+#   summarise_all(funs(sum(. == "False"))) %>% 
+#   gather(attribute, false, 1:ncol(.)) %>% 
+#   inner_join(test, by = "attribute") %>% 
+#   mutate(total = false + true,
+#          perc_true = round(true / (false + true),2)) %>% 
+#   filter(total > 20, true > 0) %>% 
+#   arrange(desc(total))
+
+# numbers non null attribute values
+food_attr_temp %>% 
+  summarise_all(funs(sum(. == 1))) %>% 
+  gather(attribute, total, 1:ncol(.)) %>% 
+  arrange(desc(total))
+
+# values for each attribute
+food_attr %>% 
+  select(-business_id) %>% 
+  gather(attribute, vals, 1:ncol(.)) %>% 
+  distinct() %>% 
+  filter(!is.na(vals) & vals != TRUE & vals != FALSE)
+
+
+```
+
+
+
+
+```{r}
+
+
+
 
 # ratings by alcohol & good for kids
 food %>% 
