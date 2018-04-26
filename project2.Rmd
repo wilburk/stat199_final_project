@@ -15,37 +15,102 @@ knitr::opts_chunk$set(echo = TRUE)
 library(stringr)
 library(tidyverse)
 library(broom)
+library(splitstackshape)
 
 business <- read_csv("yelp-dataset-csv/yelp_business.csv")
 business_attr <- read_csv("yelp-dataset-csv/yelp_business_attributes.csv")
 business_hours <- read_csv("yelp-dataset-csv/yelp_business_hours.csv")
 yelp_review <- read_csv("yelp-dataset-csv/yelp_review.csv", n_max = 10000)
+```
+
+### Filter for restaurants
+
+```{r clean-data}
 food <- business %>% 
-  filter(str_detect(categories, "Food|Restaurants"))
+  filter(str_detect(categories, "Food|Restaurants")) %>% 
+  mutate(categories = str_remove(categories, "Restaurants;"),
+         categories = str_remove(categories, ";Restaurants"),
+         categories = str_remove(categories, ";Food"),
+         categories = str_remove(categories, "Food;"))
 food_ids <- food %>% 
   select(business_id) %>% 
   pull()
 food_attr <- business_attr %>% 
   filter(business_id %in% food_ids)
+
+
+
+
+food_attr %>% 
+  inner_join(food, by = "business_id") %>% 
+  select(categories, HasTV) %>% 
+  filter(HasTV == "full_bar")
+
+food_attr %>% 
+  count(GoodForKids)
 ```
+
 
 ### Miles
 
+
+```{r}
+# look at column stats
+
+food_attr_temp <- food_attr %>% 
+  select(-business_id)
+
+food_attr_temp[food_attr_temp == "Na"] <- 0
+#food_attr_temp[food_attr_temp != 0] <- 1
+
+test <- food_attr_temp %>% 
+  summarise_all(funs(sum(. == "True"))) %>% 
+  gather(attribute, true, 1:ncol(.))
+
+food_attr_temp %>% 
+  summarise_all(funs(sum(. == "False"))) %>% 
+  gather(attribute, false, 1:ncol(.)) %>% 
+  inner_join(test, by = "attribute") %>% 
+  mutate(total = false + true,
+         perc_true = round(true / (false + true),2)) %>% 
+  filter(total > 20, true > 0) %>% 
+  arrange(desc(total))
+
+
+
+
+food_attr %>% 
+  select(-business_id) %>% 
+  gather(attribute, vals, 1:ncol(.)) %>% 
+  distinct() %>% 
+  filter(vals != "False", vals != "True", vals != "Na")
+
+food_attr %>% 
+  count(HasTV) 
+
+
+```
+
 ```{r}
 
-#join with attributes
-business %>%
-  inner_join(business_attr, by = "business_id")
+food %>% 
 
+```
+
+
+
+```{r}
 
 
 
 # ratings by alcohol & good for kids
-# food %>% 
-#   filter(!is.na(attributes.Alcohol), !is.na(attributes.GoodForKids)) %>% 
-#   group_by(attributes.GoodForKids, attributes.Alcohol) %>% 
-#   summarise(mean = mean(stars),
-#             n = n())
+food_attr %>%
+  select(Alcohol, GoodForKids, business_id) %>% 
+  filter(!is.na(Alcohol), !is.na(GoodForKids)) %>%
+  inner_join(food, by = "business_id") %>% 
+  group_by(GoodForKids, Alcohol) %>%
+  summarise(mean = mean(stars),
+            n = n())
 
 # get top # cities
 food %>% 
