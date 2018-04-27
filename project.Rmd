@@ -9,13 +9,30 @@ output: github_document
 
 ```{r load-packages-data}
 library(stringr)
+library(stringi)
 library(tidyverse)
 library(broom)
+library(splitstackshape)
+library(rpart)
+library(rpart.plot)
+library(RColorBrewer)
 
 # run load-data.R first
 food <- read_csv("data/food.csv")
 food_attr <- read_csv("data/food-attributes.csv") 
 food_hours <- read_csv("data/food-hours.csv")
+
+food_attr <- food_attr %>% 
+  select(-starts_with("DietaryRestrictions"))
+
+food_attr_col <- colnames(food_attr) %>% 
+  as.data.frame() %>%
+  mutate(cols = str_replace(., "-", "_")) %>% 
+  select(-.) %>% 
+  pull()
+
+colnames(food_attr) <- food_attr_col
+
 ```
 
 ```{r}
@@ -33,43 +50,259 @@ food_hours <- read_csv("data/food-hours.csv")
 
 ### EDA -- Miles
 
-```{r}
+```{r message=FALSE}
+
+
 food_attr_temp <- food_attr %>% 
-  select(-business_id)
+  select(-business_id) %>% 
+  mutate(BusinessParking =  BusinessParking.garage	  == TRUE	|	 	
+                            BusinessParking.street    == TRUE |				
+                            BusinessParking.validated	== TRUE	|	 
+                            BusinessParking.lot       == TRUE |	
+                            BusinessParking.valet     == TRUE,
+         Music =  Music.dj                == TRUE |				
+                  Music.background_music	== TRUE |			
+                  Music.no_music		      == TRUE |		
+                  Music.karaoke	          == TRUE |			
+                  Music.live              == TRUE | 
+                  Music.video             == TRUE |			
+                  Music.jukebox	          == TRUE ,	
+         Ambience = Ambience.romantic	== TRUE |			
+                    Ambience.intimate	== TRUE |			
+                    Ambience.classy		== TRUE |		
+                    Ambience.hipster	== TRUE |			
+                    Ambience.divey		== TRUE |		
+                    Ambience.touristy	== TRUE |			
+                    Ambience.trendy		== TRUE |		
+                    Ambience.upscale  == TRUE |
+                    Ambience.casual		== TRUE,	
+         BestNights = BestNights.monday	  	== TRUE |	
+                      BestNights.tuesday		== TRUE |			
+                      BestNights.friday			== TRUE |		
+                      BestNights.wednesday	== TRUE |				
+                      BestNights.thursday		== TRUE |			
+                      BestNights.sunday			== TRUE |		
+                      BestNights.saturday		== TRUE,	
+         GoodForMeal =  GoodForMeal.dessert   == TRUE |		
+                        GoodForMeal.latenight	== TRUE |
+                        GoodForMeal.lunch		  == TRUE |			
+                        GoodForMeal.dinner		== TRUE |			
+                        GoodForMeal.breakfast	== TRUE |		
+                        GoodForMeal.brunch		== TRUE)	
+         # DietaryRestrictions =  DietaryRestrictions.dairy_free	== TRUE |			
+         #                        DietaryRestrictions.gluten_free	== TRUE |			
+         #                        DietaryRestrictions.vegan				== TRUE |	
+         #                        DietaryRestrictions.kosher			== TRUE |		
+         #                        DietaryRestrictions.halal			  == TRUE |		
+         #                        DietaryRestrictions.soy_free	  == TRUE |
+         #                        DietaryRestrictions.vegetarian  == TRUE)
 
 food_attr_temp[is.na(food_attr_temp)] <- 0
 food_attr_temp[food_attr_temp != 0] <- 1
 
-# test <- food_attr_temp %>% 
-#   summarise_all(funs(sum(. == "True"))) %>% 
+# test <- food_attr_temp %>%
+#   summarise_all(funs(sum(. == "True"))) %>%
 #   gather(attribute, true, 1:ncol(.))
 # 
-# food_attr_temp %>% 
-#   summarise_all(funs(sum(. == "False"))) %>% 
-#   gather(attribute, false, 1:ncol(.)) %>% 
-#   inner_join(test, by = "attribute") %>% 
+# food_attr_temp %>%
+#   summarise_all(funs(sum(. == "False"))) %>%
+#   gather(attribute, false, 1:ncol(.)) %>%
+#   inner_join(test, by = "attribute") %>%
 #   mutate(total = false + true,
-#          perc_true = round(true / (false + true),2)) %>% 
-#   filter(total > 20, true > 0) %>% 
+#          perc_true = round(true / (false + true),2)) %>%
+#   filter(total > 20, true > 0) %>%
 #   arrange(desc(total))
 
-# numbers non null attribute values
+
+
 food_attr_temp %>% 
   summarise_all(funs(sum(. == 1))) %>% 
   gather(attribute, total, 1:ncol(.)) %>% 
+  arrange(desc(total)) %>% 
+  filter(!str_detect(attribute, "\\."))
+
+
+# numbers non null attribute values
+food_attr_counts <- food_attr_temp %>% 
+  summarise_all(funs(sum(. == 1))) %>% 
+  gather(attribute, total, 1:ncol(.)) %>% 
   arrange(desc(total))
+  #filter(!str_detect(attribute, "\\."))
+
+food_attr_temp %>%
+  mutate_all(funs(as.numeric(.))) %>% 
+  select(1:65) %>% 
+  mutate(sum = rowSums(.[1:65])) %>% 
+  ggplot(aes(x = sum)) +
+  geom_histogram()
+  
+glimpse(food_attr_temp)
+ 
+data.frame(attribute = colnames(food_attr)) %>% 
+  filter(str_detect(attribute, "\\.")) %>% 
+  inner_join(food_attr_counts, by = "attribute") %>% 
+  mutate(attribute_parent = str_remove(attribute, "\\..+")) %>%
+  rename(subtotal = total) %>% 
+  inner_join(food_attr_counts, by = c("attribute_parent" = "attribute")) %>% 
+  mutate(prop = subtotal / total) %>% 
+  arrange(attribute_parent, desc(prop)) %>% 
+  select(-attribute_parent)
+
+data.frame(attribute = colnames(food_attr)) %>% 
+  filter(str_detect(attribute, "\\.")) %>% 
+  inner_join(food_attr_counts, by = "attribute") %>% 
+  mutate(attribute_parent = str_remove(attribute, "\\..+")) %>%
+  rename(subtotal = total) %>% 
+  inner_join(food_attr_counts, by = c("attribute_parent" = "attribute")) %>% 
+  mutate(prop = subtotal / total) %>% 
+  arrange(attribute_parent, desc(prop)) %>% 
+  group_by(attribute_parent) %>% 
+  summarise(undisjoint_factor = sum(subtotal) / median(total))
+
 
 # values for each attribute
 food_attr %>% 
   select(-business_id) %>% 
   gather(attribute, vals, 1:ncol(.)) %>% 
   distinct() %>% 
-  filter(!is.na(vals) & vals != TRUE & vals != FALSE)
+  filter(!is.na(vals) & vals != TRUE & vals != FALSE) 
+
+# food_attr %>% 
+#   mutate(AmbienceList = paste(case_when(Ambience.romantic == TRUE ~ "romantic,",
+#                                          Ambience.romantic == FALSE ~ ""),
+#                                case_when(Ambience.intimate == TRUE ~ "intimate,",
+#                                          Ambience.intimate == FALSE ~ ""),
+#                                case_when(Ambience.classy == TRUE ~ "classy,",
+#                                          Ambience.classy == FALSE ~ ""),
+#                                case_when(Ambience.casual == TRUE ~ "casual,",
+#                                          Ambience.casual == FALSE ~ ""),
+#                                case_when(Ambience.upscale == TRUE ~ "upscale,",
+#                                          Ambience.upscale == FALSE ~ ""),
+#                                case_when(Ambience.trendy == TRUE ~ "trendy,",
+#                                          Ambience.trendy == FALSE ~ ""),
+#                                case_when(Ambience.divey == TRUE ~ "divey,",
+#                                          Ambience.divey == FALSE ~ ""),
+#                                case_when(Ambience.touristy == TRUE ~ "touristy,",
+#                                          Ambience.touristy == FALSE ~ ""),
+#                                case_when(Ambience.hipster == TRUE ~ "hipster,",
+#                                          Ambience.hipster == FALSE ~ ""), sep = "")) %>%
+#   mutate(AmbienceList = str_remove_all(AmbienceList, "NA")) %>% 
+#   select(starts_with("Ambience")) %>% 
+#   count(AmbienceList) %>% 
+#   arrange(desc(n))
+
+# food_attr %>% 
+#   t %>% 
+#   as.data.frame() %>% 
+#   rbind()
+# 
+# row.names(food_attr) <- food_attr$business_id
+# 
+# food_attr %>% 
+#   mutate_all(funs(str_remove(names(.), ".+\\.")))
 
 
+food_attr <- food_attr %>% 
+  select(-business_id) %>% 
+  mutate(aggBusinessParking =  BusinessParking.garage	  == TRUE	|	 	
+                            BusinessParking.street    == TRUE |				
+                            BusinessParking.validated	== TRUE	|	 
+                            BusinessParking.lot       == TRUE |	
+                            BusinessParking.valet     == TRUE,
+         aggMusic =  Music.dj                == TRUE |				
+                  Music.background_music	== TRUE |			
+                  Music.no_music		      == TRUE |		
+                  Music.karaoke	          == TRUE |			
+                  Music.live              == TRUE | 
+                  Music.video             == TRUE |			
+                  Music.jukebox	          == TRUE ,	
+         aggAmbience = Ambience.romantic	== TRUE |			
+                    Ambience.intimate	== TRUE |			
+                    Ambience.classy		== TRUE |		
+                    Ambience.hipster	== TRUE |			
+                    Ambience.divey		== TRUE |		
+                    Ambience.touristy	== TRUE |			
+                    Ambience.trendy		== TRUE |		
+                    Ambience.upscale  == TRUE |
+                    Ambience.casual		== TRUE,	
+         aggBestNights = BestNights.monday	  	== TRUE |	
+                      BestNights.tuesday		== TRUE |			
+                      BestNights.friday			== TRUE |		
+                      BestNights.wednesday	== TRUE |				
+                      BestNights.thursday		== TRUE |			
+                      BestNights.sunday			== TRUE |		
+                      BestNights.saturday		== TRUE,	
+         aggGoodForMeal =  GoodForMeal.dessert   == TRUE |		
+                        GoodForMeal.latenight	== TRUE |
+                        GoodForMeal.lunch		  == TRUE |			
+                        GoodForMeal.dinner		== TRUE |			
+                        GoodForMeal.breakfast	== TRUE |		
+                        GoodForMeal.brunch		== TRUE)	%>% 
+  select(-starts_with("Ambience"),-starts_with("GoodForMeal"),-starts_with("Music"),-starts_with("BusinessParking"), -starts_with("BestNights"),-ByAppointmentOnly, -CoatCheck, -RestaurantsCounterService, -Corkage, -ByAppointmentOnly, -AgesAllowed, -BusinessAcceptsBitcoin, -BYOB, -Open24Hours)
+
+#GoodForDancing
+#BYOBCorkage
+#DogsAllowed
+#DriveThru
+
+
+for (i in 1:ncol(food_attr)){
+  word <- str_remove(colnames(food_attr)[i], ".+\\.")
+  for (j in 1:nrow(food_attr)){
+      if (is.na(food_attr[j,i])) {
+        food_attr[j,i] = ""
+      } else {
+        food_attr[j,i] = word
+      }
+    }
+}
+
+food_attr <- food_attr %>% 
+  mutate_all(funs(case_when(. == "" ~ "",
+                            . != '' ~ paste0(., ","))))
+
+food_attr %>% 
+  unite(attr,sep = "", remove = TRUE) %>% 
+  count(attr) %>% 
+  mutate(num_attr = str_count(attr, ",")) %>% 
+#  filter(num_attr > 4, n * num_attr > 1000, n > 100) %>% 
+  arrange(desc(n), desc(num_attr))  %>% 
+#  pull(attr)
+  ggplot(aes(num_attr,n, color = num_attr * n)) +
+  #geom_jitter(width = 0.4, height = 0.4 , size = 3)
+  geom_point(size = 3)
 ```
 
+```{r}
+food_tall <- food %>% 
+  cSplit("categories", direction = "tall", sep = ",") 
 
+food_tall %>% 
+  count(categories) %>% 
+  arrange(desc(n))
+
+food %>% 
+  count(categories) %>% 
+  arrange(desc(n))
+
+food %>% 
+  count(categories) %>% 
+  arrange(desc(n)) %>%
+  filter(n > 50) %>% 
+  ggplot(aes(n)) + 
+  geom_histogram()
+
+food_tall %>% 
+  count(categories) %>% 
+  filter(n > 10) %>% 
+  ggplot(aes(n)) + 
+  geom_histogram()
+```
+
+```{r}
+ggplot(food_attr, aes(NoiseLevel))+
+  geom_histogram(stat="count")
+```
 
 
 ```{r}
@@ -100,7 +333,8 @@ toronto_neighborhood %>%
 
 # aggregate postal codes (heirarchical structure so just took two few numbers)
 toronto_neighborhood <- toronto_neighborhood %>%
-  mutate(postal_code_short = substr(postal_code, 1 , 2))
+  mutate(postal_code_short = substr(postal_code, 1 , 2)) %>% 
+  filter(postal_code_short != "L1" & postal_code_short != "L3" & postal_code_short != "L5")
 
 # summary stats by neighborhood
 toronto_neighborhood %>% 
@@ -110,15 +344,17 @@ toronto_neighborhood %>%
   arrange(desc(mean))
 
 # kmeans by attributes 7 through 10
-kmns <- kmeans(toronto_neighborhood[7:10], 10)
+kmns <- kmeans(toronto_neighborhood[8:11], 10)
 
 # view kmeans results
 head(augment(kmns, toronto_neighborhood))
 tidy(kmns)
 
 # view postal codes in space
-ggplot(toronto_neighborhood, aes(x = latitude, y = longitude, color = postal_code_short)) +
-  geom_point()
+toronto_neighborhood %>% 
+  filter(postal_code_short != "") %>% 
+  ggplot(aes(x = latitude, y = longitude, color = postal_code_short)) +
+  geom_point(alpha = 1, size = 1)
 ```
 ### kmeans
 
@@ -126,7 +362,7 @@ ggplot(toronto_neighborhood, aes(x = latitude, y = longitude, color = postal_cod
 # kmeans exploratory analysis
 kmns <- data.frame(k=1:9) %>% 
   group_by(k) %>% 
-  do(kmns=kmeans(toronto_neighborhood[7:8], .$k))
+  do(kmns = kmeans(toronto_neighborhood[8:9], .$k))
 
 clusters <- kmns %>%
     group_by(k) %>%
@@ -140,12 +376,55 @@ clusterings <- kmns %>%
     group_by(k) %>%
     do(glance(.$kmns[[1]]))
 
-p1 <- ggplot(assignments, aes(latitude, longitude)) +
-    geom_point(aes(color=.cluster)) +
+ggplot(assignments, aes(latitude, longitude)) +
+    geom_point(aes(color=.cluster), alpha = 0.33, size = 0.2) +
     facet_wrap(~ k)
-
-p1
 ```
+
+```{r}
+
+toronto_neighborhood_tall <- toronto_neighborhood %>% 
+  cSplit("categories", direction = "tall", sep = ",") 
+
+
+# 7560
+toronto_neighborhood %>% 
+  nrow()
+
+# get list of major categories
+major_categories <- toronto_neighborhood_tall %>% 
+  count(categories) %>% 
+  filter(n > 18) %>%
+  arrange(desc(n)) %>% 
+  pull(categories)
+
+# filters to 7365 - good!
+toronto_neighborhood_tall <- toronto_neighborhood_tall %>% 
+  filter(categories %in% major_categories) %>% 
+  head(200)
+  
+
+rpart.control(minbucket=2)
+fit <- rpart(postal_code ~ neighborhood, method = "class", data = toronto_neighborhood_tall)
+
+
+printcp(fit) # display the results 
+plotcp(fit) # visualize cross-validation results 
+summary(fit) # detailed summary of splits
+rsq.rpart(fit)
+# plot tree 
+# plot(fit, uniform=TRUE, 
+#   	main="Regression Tree for Stars")
+# text(fit, use.n=TRUE, all=TRUE, cex=.8)
+
+
+#fancyRpartPlot(fit)
+
+```
+
+
+
+
 
 ### EDA -- Katie
 ```{r}
