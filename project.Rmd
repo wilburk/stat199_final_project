@@ -148,6 +148,9 @@ p1
 ```
 
 ### EDA -- Katie
+```{r}
+colSums(is.na(food_attr))
+```
 
 
 ### EDA -- Ivy
