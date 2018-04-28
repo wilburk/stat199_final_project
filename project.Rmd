@@ -613,13 +613,13 @@ food_stars <- food %>%
 lm_data <- cbind(food_stars,food_attr)
 
 analysis1 <- lm_data %>% 
-  select(BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,WheelchairAccessible,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut,RestaurantsTableService,OutdoorSeating,RestaurantsDelivery,aggBusinessParking,aggAmbience,aggGoodForMeal) 
+  select(BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,WiFi,RestaurantsReservations,RestaurantsTakeOut) 
 
 #omit Nas in analysis 1
 omit_a1 <- na.omit(analysis1)
  
 #run linear analysis 
-lm_a1 <- lm(stars ~ BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+WheelchairAccessible+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+RestaurantsTableService+OutdoorSeating+RestaurantsDelivery+aggBusinessParking+aggAmbience+aggGoodForMeal,data = omit_a1)
+lm_a1 <- lm(stars ~ BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+WiFi+RestaurantsReservations+RestaurantsTakeOut,data = omit_a1)
 
 AIC(lm_a1)
 ```
