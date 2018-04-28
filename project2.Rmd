@@ -184,7 +184,8 @@ p1
 ### Ivy
 
 ```{r}
-
+food_attr %>% 
+  filter(Alcohol != "Na")
 ```
 
 

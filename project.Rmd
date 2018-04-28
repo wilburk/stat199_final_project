@@ -397,12 +397,37 @@ find_best_cols <- function(tbl) {
   return(final_df %>% 
     arrange(desc(num_attr), desc(n)))
 }
-
+food_attr
 # This might take a while
 find_best_cols(food_attr_mod[24:28])
 
 food_attr_mod
 ```
+
+```{r}
+#aggregate food_attr data 
+#recode true to the name and false to na, and then aggregate all the columns 
+food_attr_1 <- food_attr %>% 
+  mutate(BusinessParking.garage = case_when(
+    BusinessParking.garage == TRUE ~ "garage",
+    BusinessParking.street == TRUE ~ "street",
+    BusinessParking.validated == TRUE ~ "validated",
+    BusinessParking.lot == TRUE ~ "lot",
+    BusinessParking.valet == TRUE ~ "valet"
+    ))
+
+food_attr_recode <- food_attr
+
+food_attr_recode$BusinessParking.garage[food_attr_recode$BusinessParking.garage == TRUE] <- "garage"
+food_attr_recode$BusinessParking.garage[food_attr_recode$BusinessParking.garage == FALSE] <- NA
+ 
+food_attr_recode
+
+```
+
+
+
+
 
 ```{r}
 ### THese are the most significant columns I found
@@ -428,6 +453,7 @@ convert_dot <- function(col_name) {
   col <- food_attr[index]
   col[col == TRUE] <- paste0(col_name_short, ",")
   col[col == FALSE] <- "."
+
   return(col)
 }
 
@@ -754,5 +780,47 @@ rsq.rpart(fit)
 
 
 ### EDA -- Ivy
+```{r}
+food_attr
 
+```
+
+
+Regression analysis for first set of attributes
+```{r}
+#Used to merge stars to food attribute
+food_stars <- food %>% 
+  select(stars)
+
+#food attr should be an aggregate dataset of all variables 
+#categorical variables should have different level in one column
+lm_data <- cbind(food_stars,food_attr)
+
+analysis1 <- lm_data %>% 
+  select(stars,BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,WiFi,RestaurantsReservations,RestaurantsTakeOut) 
+
+#omit Nas in analysis 1
+omit_a1 <- na.omit(analysis1)
+ 
+#run linear analysis 
+lm_a1 <- lm(stars ~ BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+WiFi+RestaurantsReservations+RestaurantsTakeOut,data = omit_a1)
+
+AIC(lm_a1)
+summary(lm_a1)$r.squared
+```
+
+
+
+```{r}
+analysis2 <- lm_data %>% 
+  select(BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut,RestaurantsTableService,OutdoorSeating,RestaurantsDelivery,aggBusinessParking,aggAmbience,aggGoodForMeal) 
+
+#omit Nas in analysis 2
+na.omit(analysis2)
+ 
+#run linear analysis 
+lm_a2 <- lm(star ~ BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+RestaurantsTableService+OutdoorSeating+RestaurantsDelivery+aggBusinessParking+aggAmbience+aggGoodForMeal,data = analysis2)
+
+AIC(lm_a2)
+```
 
