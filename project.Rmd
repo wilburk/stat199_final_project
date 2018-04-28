@@ -439,7 +439,7 @@ convert_dot <- function(col_name) {
   index <- grep(col_name, colnames(food_attr))
   col <- food_attr[index]
   col[col == TRUE] <- paste0(col_name_short, ",")
-  col[col == FALSE] <- ""
+  col[col == FALSE] <- NA
   return(col)
 }
 
