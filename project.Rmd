@@ -134,7 +134,7 @@ food_attr_temp %>%
   select(1:65) %>% 
   mutate(sum = rowSums(.[1:65])) %>% 
   ggplot(aes(x = sum)) +
-  geom_histogram()
+  geom_histogram(binwidth = 10)
   
 glimpse(food_attr_temp)
  
