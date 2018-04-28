@@ -407,7 +407,22 @@ find_best_cols(food_attr_mod[1:14])
 
 # BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut,
 
+convert_dot <- function(col_name) {
+  col_name_short <- str_remove(col_name, ".+\\.")
+  index <- grep(col_name, colnames(food_attr))
+  col <- food_attr[index]
+  col[col == TRUE] <- paste0(col_name_short, ",")
+  col[col == FALSE] <- ""
+  return(col)
+}
 
+
+lst <- food_attr %>% 
+  select(contains(".")) %>% 
+  colnames() 
+
+map(lst, convert_dot) %>% 
+  data.frame()
 ```
 
 
