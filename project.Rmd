@@ -396,6 +396,7 @@ food_attr
 # This might take a while
 find_best_cols(food_attr_mod[1:14])
 ```
+
 ```{r}
 #aggregate food_attr data 
 #recode true to the name and false to na, and then aggregate all the columns 
@@ -415,9 +416,6 @@ food_attr_recode$BusinessParking.garage[food_attr_recode$BusinessParking.garage 
  
 food_attr_recode
 
-aggdata <-aggregate(food_attr, by=list(BusinessParking.garage,BusinessParking.street, BusinessParking.validated, BusinessParking.lot, BusinessParking.valet), 
-   na.rm=TRUE)
-print(aggdata)
 ```
 
 
@@ -628,7 +626,7 @@ food_stars <- food %>%
 lm_data <- cbind(food_stars,food_attr)
 
 analysis1 <- lm_data %>% 
-  select(BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,WiFi,RestaurantsReservations,RestaurantsTakeOut) 
+  select(stars,BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,WiFi,RestaurantsReservations,RestaurantsTakeOut) 
 
 #omit Nas in analysis 1
 omit_a1 <- na.omit(analysis1)
@@ -637,6 +635,7 @@ omit_a1 <- na.omit(analysis1)
 lm_a1 <- lm(stars ~ BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+WiFi+RestaurantsReservations+RestaurantsTakeOut,data = omit_a1)
 
 AIC(lm_a1)
+summary(lm_a1)$r.squared
 ```
 
 
