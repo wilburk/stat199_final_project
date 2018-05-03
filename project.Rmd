@@ -147,11 +147,12 @@ level_props <- data.frame(attribute = colnames(food_attr)) %>%
   rename(subtotal = total) %>% 
   inner_join(food_attr_counts, by = c("attribute_parent" = "attribute")) %>% 
   mutate(prop = subtotal / total) %>% 
-  mutate(subtotal = case_when(attribute == "hipster" ~ 858,
-                              attribute != "hipster" ~ subtotal)) %>% 
+  mutate(subtotal = case_when(attribute == "hipster" ~ as.double(858),
+                              attribute != "hipster" ~ as.double(subtotal))) %>% 
   arrange(attribute_parent, desc(prop)) 
 
 level_props[4,2] <- 858
+level_props[4,5] <- 0.03737
 level_props
 
 data.frame(attribute = colnames(food_attr)) %>% 
@@ -254,6 +255,46 @@ food_attr_mod <- food_attr %>%
 #BYOBCorkage
 #DogsAllowed
 #DriveThru
+
+
+food_attr_mod_2 <- food_attr %>% 
+  as.data.frame() %>% 
+  select(-business_id) %>% 
+  mutate(aggBusinessParking =  BusinessParking.garage	  == TRUE	|	 	
+                            BusinessParking.street    == TRUE |				
+                            BusinessParking.validated	== TRUE	|	 
+                            BusinessParking.lot       == TRUE |	
+                            BusinessParking.valet     == TRUE,
+         aggMusic =  Music.dj                == TRUE |				
+                  Music.background_music	== TRUE |			
+                  Music.no_music		      == TRUE |		
+                  Music.karaoke	          == TRUE |			
+                  Music.live              == TRUE | 
+                  Music.video             == TRUE |			
+                  Music.jukebox	          == TRUE ,	
+         aggAmbience = Ambience.romantic	== TRUE |			
+                    Ambience.intimate	== TRUE |			
+                    Ambience.classy		== TRUE |		
+                    Ambience.hipster	== TRUE |			
+                    Ambience.divey		== TRUE |		
+                    Ambience.touristy	== TRUE |			
+                    Ambience.trendy		== TRUE |		
+                    Ambience.upscale  == TRUE |
+                    Ambience.casual		== TRUE,	
+         aggBestNights = BestNights.monday	  	== TRUE |	
+                      BestNights.tuesday		== TRUE |			
+                      BestNights.friday			== TRUE |		
+                      BestNights.wednesday	== TRUE |				
+                      BestNights.thursday		== TRUE |			
+                      BestNights.sunday			== TRUE |		
+                      BestNights.saturday		== TRUE,	
+         aggGoodForMeal =  GoodForMeal.dessert   == TRUE |		
+                        GoodForMeal.latenight	== TRUE |
+                        GoodForMeal.lunch		  == TRUE |			
+                        GoodForMeal.dinner		== TRUE |			
+                        GoodForMeal.breakfast	== TRUE |		
+                        GoodForMeal.brunch		== TRUE)	%>% 
+  select(-starts_with("Ambience"),-starts_with("GoodForMeal"),-starts_with("Music"),-starts_with("BusinessParking"), -starts_with("BestNights"),-ByAppointmentOnly, -CoatCheck, -RestaurantsCounterService, -Corkage, -ByAppointmentOnly, -AgesAllowed, -BusinessAcceptsBitcoin, -BYOB, -Open24Hours)
 
 
 # for (i in 1:ncol(food_attr)){
@@ -402,7 +443,24 @@ food_attr
 find_best_cols(food_attr_mod[24:28])
 
 food_attr_mod
+
+#### aggBusinessParking,aggAmbience,aggGoodForMeal,
+
+
+food_attr 
+
+food_attr_mod_2 <- food_attr %>% 
+  select(-business_id) %>%
+  cbind(food_attr_reduce) %>% 
+#  select(-starts_with("Ambience"),-starts_with("GoodForMeal"),-starts_with("Music"),-starts_with("BusinessParking"), -starts_with("BestNights"),-ByAppointmentOnly, -CoatCheck, -RestaurantsCounterService, -Corkage, -ByAppointmentOnly, -AgesAllowed, -BusinessAcceptsBitcoin, -BYOB, -Open24Hours%>% 
+  select(BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal) %>% 
+
+  drop_na()
+
 ```
+
+
+
 
 ```{r}
 #aggregate food_attr data 
@@ -542,7 +600,8 @@ test <- food_attr_convert %>%
 #   return(col)
 # }
 pick_index_min <- function(freq_vect) {
-  return(grep(min(freq_vect), freq_vect)[[1]])
+  return(grep(min(freq_vect), freq_vect))
+  #[[1]]
 }
 
 pick_index_prob <- function(freq_vect) {
@@ -571,7 +630,9 @@ pick_index_prob <- function(freq_vect) {
   return(grep(ord_vect[[ind]],freq_vect))
 }
 
-
+food_attr %>% 
+  cbind(food_attr_reduce) %>% 
+  select(-business_id)
 
 my_reduce <- function(col) {
 
@@ -589,7 +650,7 @@ my_reduce <- function(col) {
           pull()
         freq_vect <- c(freq_vect, freq)
       }
-      index <- pick_index_prob(freq_vect)
+      index <- pick_index_min(freq_vect)
       col[[i]] <- vals[index]
     }
   }
@@ -601,23 +662,29 @@ level_props
 food_attr_convert %>% 
   filter(str_detect(aggBestNights, ',')) %>% 
   select(aggBestNights) %>% 
-  head(1000) %>% 
+  head(10000) %>% 
   mutate_all(funs(my_reduce)) %>% 
   count(aggBestNights) %>% 
   arrange(desc(n))
 
+food_attr_convert$aggBestNights
+
+#my_reduce(food_attr_convert$aggAmbience)
+
 food_attr_reduce <- food_attr_convert %>% 
-  head(100) %>% 
   mutate_all(funs(my_reduce))
 
 
 food_attr_reduce <- food_attr %>% 
-  select(business_id) %>% 
-  cbind(food_attr_reduce)
 
-food_attr_reduce %>% 
-  count(aggBestNights) %>% 
-  arrange(desc(n))
+
+
+
+
+
+# food_attr_reduce %>% 
+#   count(aggAmbience) %>% 
+#   arrange(desc(n))
 
 ```
 
