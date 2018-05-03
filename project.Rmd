@@ -398,6 +398,7 @@ find_best_cols <- function(tbl) {
 
 # This might take a while
 find_best_cols(food_attr_mod[1:14])
+
 ```
 
 ```{r}
@@ -410,7 +411,7 @@ find_best_cols(food_attr_mod[1:14])
 
 # BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut,
 
-
+food_attr 
 ```
 
 
