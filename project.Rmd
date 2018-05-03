@@ -42,15 +42,7 @@ colnames(food_attr) <- food_attr_col
 ```
 
 ```{r}
-# food1 %>% 
-#   filter(!is.na(attributes.NoiseLevel)) 
-# 
-# food1 %>%
-#   filter(attributes.Alcohol != "full_bar") %>% 
-#   select(attributes.Alcohol, categories)
-# 
-# food1 %>% 
-#   count(attributes.RestaurantsPriceRange2)
+
 ```
 
 
