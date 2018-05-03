@@ -200,7 +200,8 @@ top_food <- food %>%
 ### Ivy
 
 ```{r}
-
+food_attr %>% 
+  filter(Alcohol != "Na")
 ```
 
 
