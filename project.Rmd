@@ -56,6 +56,8 @@ colnames(food_attr) <- food_attr_col
 
 ### EDA -- Miles
 
+Relevant Code: 
+
 ```{r message=FALSE}
 
 food_attr_temp <- food_attr %>% 
@@ -169,6 +171,202 @@ data.frame(attribute = colnames(food_attr)) %>%
 ```
 
 
+```{r}
+convert_dot <- function(col_name) {
+  col_name_short <- str_remove(col_name, ".+\\.")
+  index <- grep(col_name, colnames(food_attr))
+  col <- food_attr[index]
+  col[col == TRUE] <- paste0(col_name_short, ",")
+  col[col == FALSE] <- "."
+
+  return(col)
+}
+
+lst <- food_attr %>% 
+  select(contains(".")) %>% 
+  colnames() 
+
+food_attr_convert <- map(lst, convert_dot) %>% 
+  as.data.frame()
+
+
+food_attr_convert <- food_attr_convert %>% 
+  mutate(aggBusinessParking =  paste0(BusinessParking.garage,	 	
+                                      BusinessParking.street,			
+                                      BusinessParking.validated,	 
+                                      BusinessParking.lot,
+                                      BusinessParking.valet, sep=""),
+         aggMusic = paste0(Music.dj,				
+                           Music.background_music,		
+                           Music.no_music,
+                           Music.karaoke	,
+                           Music.live,
+                           Music.video,			
+                           Music.jukebox, sep=""),
+         aggAmbience = paste0(Ambience.romantic,
+                              Ambience.intimate,		
+                              Ambience.classy	,	
+                              Ambience.hipster,		
+                              Ambience.divey	,	
+                              Ambience.touristy,		
+                              Ambience.trendy	,	
+                              Ambience.upscale,
+                              Ambience.casual, sep=""),
+         aggBestNights = paste0(BestNights.monday	 ,	
+                                BestNights.tuesday		,	
+                                BestNights.friday			,
+                                BestNights.wednesday	,		
+                                BestNights.thursday		,	
+                                BestNights.sunday			,
+                                BestNights.saturday, sep=""),
+         aggGoodForMeal = paste0(GoodForMeal.dessert,		
+                                 GoodForMeal.latenight,
+                                 GoodForMeal.lunch		  ,	
+                                 GoodForMeal.dinner		,	
+                                 GoodForMeal.breakfast	,
+                                 GoodForMeal.brunch, sep="")) %>% 
+  select(-contains(".")) %>% 
+  mutate_all(funs(str_replace_all(.,",+", ","))) %>% 
+  mutate_all(funs(str_replace_all(., "[NA]+", "NA"))) %>% 
+  mutate_all(funs(str_remove_all(., "\\.NA|NA\\."))) %>% 
+  mutate_all(funs(str_replace_all(., "^\\.+$", "None"))) %>% 
+  mutate_all(funs(str_remove_all(., "\\.+"))) %>% 
+  mutate_all(funs(str_remove(.,"^,"))) %>% 
+  mutate_all(funs(str_remove(.,",$")))
+
+
+food_attr_convert[food_attr_convert == "NA"] <- NA
+
+### PROBLEM: too many collisions between variables - need to reduce to one value; don't want to eliminate too much information
+### SOLUTION1: choose in order of frequency, low to high
+### IMPLEMENTATION: iterate through, call function: if (numberofcommas + 1) > 1: split into vector, for each element in vector
+### PROBLEM: if all slightly equal numbers but still collisions, some vals might not get seen
+
+pick_index_min <- function(freq_vect) {
+  return(grep(min(freq_vect), freq_vect))
+}
+
+
+pick_index_prob <- function(freq_vect) {
+  ord_vect <- sort(freq_vect)
+  total <- reduce(freq_vect, sum)
+  ord_vect_prob <- sapply(ord_vect, function(x) x/total)
+  rev_vect_prob <- sort(ord_vect_prob, decreasing = TRUE)
+  for (i in 2:length(rev_vect_prob)){
+    rev_vect_prob[[i]] <- rev_vect_prob[[i]] + rev_vect_prob[[i-1]]
+  }
+  rand <- runif(1)
+  ind <- which(sapply(rev_vect_prob, function (x) x > rand))[[1]]
+  return(grep(ord_vect[[ind]],freq_vect))
+}
+
+my_reduce <- function(col) {
+
+  for (i in 1:length(col)) {
+    val_list <- col[[i]]
+    if (is.na(val_list) | val_list == "None" | !str_detect(val_list, ",")) {
+      col[[i]] <- val_list
+    } else {
+      vals <- unlist(str_split(val_list, ","))
+      freq_vect <- c()
+      for (val in vals) {
+        freq <- level_props %>%
+          filter(attribute == val) %>%
+          select(subtotal) %>%
+          pull()
+        freq_vect <- c(freq_vect, freq)
+      }
+      index <- pick_index_min(freq_vect)
+      col[[i]] <- vals[index]
+    }
+  }
+  return(col)
+}
+
+food_attr_reduce <- food_attr_convert %>% 
+  mutate_all(funs(my_reduce))
+
+```
+
+
+
+```{r}
+
+
+food_attr_mod_2 <- food_attr %>% 
+  as.data.frame() %>% 
+  select(-business_id) %>% 
+  mutate(aggBusinessParking =  BusinessParking.garage	  == TRUE	|	 	
+                            BusinessParking.street    == TRUE |				
+                            BusinessParking.validated	== TRUE	|	 
+                            BusinessParking.lot       == TRUE |	
+                            BusinessParking.valet     == TRUE,
+         aggMusic =  Music.dj                == TRUE |				
+                  Music.background_music	== TRUE |			
+                  Music.no_music		      == TRUE |		
+                  Music.karaoke	          == TRUE |			
+                  Music.live              == TRUE | 
+                  Music.video             == TRUE |			
+                  Music.jukebox	          == TRUE ,	
+         aggAmbience = Ambience.romantic	== TRUE |			
+                    Ambience.intimate	== TRUE |			
+                    Ambience.classy		== TRUE |		
+                    Ambience.hipster	== TRUE |			
+                    Ambience.divey		== TRUE |		
+                    Ambience.touristy	== TRUE |			
+                    Ambience.trendy		== TRUE |		
+                    Ambience.upscale  == TRUE |
+                    Ambience.casual		== TRUE,	
+         aggBestNights = BestNights.monday	  	== TRUE |	
+                      BestNights.tuesday		== TRUE |			
+                      BestNights.friday			== TRUE |		
+                      BestNights.wednesday	== TRUE |				
+                      BestNights.thursday		== TRUE |			
+                      BestNights.sunday			== TRUE |		
+                      BestNights.saturday		== TRUE,	
+         aggGoodForMeal =  GoodForMeal.dessert   == TRUE |		
+                        GoodForMeal.latenight	== TRUE |
+                        GoodForMeal.lunch		  == TRUE |			
+                        GoodForMeal.dinner		== TRUE |			
+                        GoodForMeal.breakfast	== TRUE |		
+                        GoodForMeal.brunch		== TRUE)	%>% 
+  select(-starts_with("Ambience"),-starts_with("GoodForMeal"),-starts_with("Music"),-starts_with("BusinessParking"), -starts_with("BestNights"),-ByAppointmentOnly, -CoatCheck, -RestaurantsCounterService, -Corkage, -ByAppointmentOnly, -AgesAllowed, -BusinessAcceptsBitcoin, -BYOB, -Open24Hours)
+
+
+
+
+food_attr_mod_2 <- food_attr %>% 
+ # select(-business_id) %>%
+  cbind(food_attr_reduce) %>% 
+  select(BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal) %>% 
+  drop_na()
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```{r}
 # values for each attribute
@@ -255,46 +453,6 @@ food_attr_mod <- food_attr %>%
 #BYOBCorkage
 #DogsAllowed
 #DriveThru
-
-
-food_attr_mod_2 <- food_attr %>% 
-  as.data.frame() %>% 
-  select(-business_id) %>% 
-  mutate(aggBusinessParking =  BusinessParking.garage	  == TRUE	|	 	
-                            BusinessParking.street    == TRUE |				
-                            BusinessParking.validated	== TRUE	|	 
-                            BusinessParking.lot       == TRUE |	
-                            BusinessParking.valet     == TRUE,
-         aggMusic =  Music.dj                == TRUE |				
-                  Music.background_music	== TRUE |			
-                  Music.no_music		      == TRUE |		
-                  Music.karaoke	          == TRUE |			
-                  Music.live              == TRUE | 
-                  Music.video             == TRUE |			
-                  Music.jukebox	          == TRUE ,	
-         aggAmbience = Ambience.romantic	== TRUE |			
-                    Ambience.intimate	== TRUE |			
-                    Ambience.classy		== TRUE |		
-                    Ambience.hipster	== TRUE |			
-                    Ambience.divey		== TRUE |		
-                    Ambience.touristy	== TRUE |			
-                    Ambience.trendy		== TRUE |		
-                    Ambience.upscale  == TRUE |
-                    Ambience.casual		== TRUE,	
-         aggBestNights = BestNights.monday	  	== TRUE |	
-                      BestNights.tuesday		== TRUE |			
-                      BestNights.friday			== TRUE |		
-                      BestNights.wednesday	== TRUE |				
-                      BestNights.thursday		== TRUE |			
-                      BestNights.sunday			== TRUE |		
-                      BestNights.saturday		== TRUE,	
-         aggGoodForMeal =  GoodForMeal.dessert   == TRUE |		
-                        GoodForMeal.latenight	== TRUE |
-                        GoodForMeal.lunch		  == TRUE |			
-                        GoodForMeal.dinner		== TRUE |			
-                        GoodForMeal.breakfast	== TRUE |		
-                        GoodForMeal.brunch		== TRUE)	%>% 
-  select(-starts_with("Ambience"),-starts_with("GoodForMeal"),-starts_with("Music"),-starts_with("BusinessParking"), -starts_with("BestNights"),-ByAppointmentOnly, -CoatCheck, -RestaurantsCounterService, -Corkage, -ByAppointmentOnly, -AgesAllowed, -BusinessAcceptsBitcoin, -BYOB, -Open24Hours)
 
 
 # for (i in 1:ncol(food_attr)){
