@@ -596,7 +596,7 @@ my_reduce <- function(col) {
   return(col)
 }
 
-level_props
+#level_props
 
 food_attr_convert %>% 
   filter(str_detect(aggBestNights, ',')) %>% 
@@ -813,14 +813,15 @@ summary(lm_a1)$r.squared
 
 ```{r}
 analysis2 <- lm_data %>% 
-  select(BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut,RestaurantsTableService,OutdoorSeating,RestaurantsDelivery,aggBusinessParking,aggAmbience,aggGoodForMeal) 
+  select(stars,BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut,RestaurantsTableService,OutdoorSeating,RestaurantsDelivery,aggBusinessParking,aggAmbience,aggGoodForMeal) 
 
 #omit Nas in analysis 2
-na.omit(analysis2)
+omit_a2 <-na.omit(analysis2)
  
 #run linear analysis 
-lm_a2 <- lm(star ~ BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+RestaurantsTableService+OutdoorSeating+RestaurantsDelivery+aggBusinessParking+aggAmbience+aggGoodForMeal,data = analysis2)
+lm_a2 <- lm(stars ~ BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+RestaurantsTableService+OutdoorSeating+RestaurantsDelivery+aggBusinessParking+aggAmbience+aggGoodForMeal,data = omit_a2)
 
 AIC(lm_a2)
+summary(lm_a2)$r.squared
 ```
 
