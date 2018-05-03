@@ -41,9 +41,6 @@ colnames(food_attr) <- food_attr_col
 
 ```
 
-```{r}
-
-```
 
 
 ### EDA -- Miles
@@ -393,18 +390,7 @@ find_best_cols(food_attr_mod[1:14])
 
 ```
 
-```{r}
-### THese are the most significant columns I found
 
-
-# BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,WiFi,RestaurantsReservations,RestaurantsTakeOut
-
-# BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,WiFi,RestaurantsReservations,RestaurantsTakeOut,
-
-# BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut,
-
-food_attr 
-```
 
 
 
@@ -434,10 +420,6 @@ food_tall %>%
   geom_histogram()
 ```
 
-```{r}
-ggplot(food_attr, aes(NoiseLevel))+
-  geom_histogram(stat="count")
-```
 
 
 ```{r}
