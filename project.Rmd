@@ -171,7 +171,7 @@ data.frame(attribute = colnames(food_attr)) %>%
 ```
 
 
-```{r}
+```{r count_columns_to_find_variables_for_analysis}
 convert_dot <- function(col_name) {
   col_name_short <- str_remove(col_name, ".+\\.")
   index <- grep(col_name, colnames(food_attr))
