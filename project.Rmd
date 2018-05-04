@@ -19,6 +19,8 @@ library(RColorBrewer)
 #library(sets)
 library(rlist)
 library(randomForest)
+library(miscTools)
+
 
 
 set.seed(415)
@@ -384,7 +386,7 @@ food_tall_reduce <- food_tall %>%
 
 ```
 
-```{r}
+```{r random_forest}
 my_reduce_2 <- function(col) {
 
   for (i in 1:length(col)) {
@@ -409,6 +411,7 @@ my_reduce_2 <- function(col) {
 }
 
 #### TOTAL FOOD COLUMN
+#reduce # of categories to one 
 system.time(food$categories <- my_reduce_2(food$categories))
 
 food %>% 
@@ -421,8 +424,13 @@ large_categories_list <- food %>%
   head(50) %>% 
   pull(categories)
 
+
+#food_reduce <- food %>% 
+  #filter(categories %in% large_categories_list)
+
+#choose one category
 food_reduce <- food %>% 
-  filter(categories %in% large_categories_list)
+  filter(categories == large_categories_list[4])
 
 food_reduce <- food_reduce %>% 
   inner_join(food_attr_mod_2, by = "business_id")
@@ -447,6 +455,8 @@ fit_full <- randomForest(stars ~  RestaurantsPriceRange2 + categories + Business
                     importance=TRUE,  
                     ntree=50)
 varImpPlot(fit_full)
+
+library(miscTools)
 (r2 <- rSquared(test_full$stars, test_full$stars - predict(fit_full, test_full)))
 plot(fit_full)
 
@@ -466,7 +476,64 @@ predict_tbl %>%
   test_full[.,]
 
 ```
+```{r random_forest_func}
 
+random_forest <- function(x){
+food_reduce <- food %>% 
+  filter(categories == x)
+
+food_reduce <- food_reduce %>% 
+  inner_join(food_attr_mod_2, by = "business_id")
+
+
+cols = c("Alcohol", "NoiseLevel", "RestaurantsAttire", "WiFi", "aggBusinessParking", "aggAmbience", "aggGoodForMeal", "categories")
+food_reduce[cols] <- lapply(food_reduce[cols], factor)
+
+train_full <- food_reduce %>% 
+  head(9*nrow(food_reduce)/10)
+
+test_full <- food_reduce %>% 
+  tail(1*nrow(food_reduce)/10)
+
+fit_full <- randomForest(stars ~  RestaurantsPriceRange2 + categories + BusinessAcceptsCreditCards + Alcohol +  HasTV + NoiseLevel +  RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal + review_count + BikeParking + GoodForKids + RestaurantsReservations + RestaurantsTakeOut + RestaurantsAttire + RestaurantsGoodForGroups, 
+                    data=train_full, 
+                    importance=TRUE,  
+                    ntree=50)
+
+rSquared(test_full$stars, test_full$stars - predict(fit_full, test_full))
+
+}
+
+#Apply the function random forest to each element of the vector large_categories_list
+categories_rows <-large_categories_list[1:20]
+r_squared <- map(categories_rows,random_forest)
+
+
+r_categories <-cbind(r_squared,categories_rows)
+r_categories_dt <- as.data.frame(r_categories, stringsAsFactors = FALSE)
+```
+####
+random_forest(large_categories_list[1])
+large_categories_list[1]
+random_forest(large_categories_list[2])
+large_categories_list[2]
+random_forest(large_categories_list[3])
+large_categories_list[3]
+random_forest(large_categories_list[4])
+large_categories_list[4]
+random_forest(large_categories_list[5])
+large_categories_list[5]
+random_forest(large_categories_list[6])
+large_categories_list[6]
+random_forest(large_categories_list[7])
+large_categories_list[7]
+random_forest(large_categories_list[8])
+large_categories_list[8]
+random_forest(large_categories_list[9])
+large_categories_list[9]
+random_forest(large_categories_list[10])
+large_categories_list[10]
+####
 
 
 
