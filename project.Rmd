@@ -411,10 +411,14 @@ my_reduce_2 <- function(col) {
 #### TOTAL FOOD COLUMN
 system.time(food$categories <- my_reduce_2(food$categories))
 
+food %>% 
+  count(categories) %>% 
+  arrange(desc(n))
+
 large_categories_list <- food %>% 
   count(categories) %>% 
   arrange(desc(n)) %>% 
-  head(30) %>% 
+  head(50) %>% 
   pull(categories)
 
 food_reduce <- food %>% 
@@ -438,14 +442,34 @@ test_full <- food_reduce %>%
 
 #stars ~  RestaurantsPriceRange2 +BusinessAcceptsCreditCards + Alcohol +HasTV + NoiseLevel +RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal
 
-fit_full <- randomForest(stars ~  RestaurantsPriceRange2 + categories + BusinessAcceptsCreditCards + Alcohol +  HasTV + NoiseLevel +  RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal, 
+fit_full <- randomForest(stars ~  RestaurantsPriceRange2 + categories + BusinessAcceptsCreditCards + Alcohol +  HasTV + NoiseLevel +  RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal + review_count + BikeParking + GoodForKids + RestaurantsReservations + RestaurantsTakeOut + RestaurantsAttire + RestaurantsGoodForGroups, 
                     data=train_full, 
                     importance=TRUE,  
                     ntree=50)
 varImpPlot(fit_full)
 (r2 <- rSquared(test_full$stars, test_full$stars - predict(fit_full, test_full)))
 plot(fit_full)
+
+fit_full
+
+predict_tbl <- predict(fit_full, test_full) %>% 
+  data.frame()
+
+colnames(predict_tbl) <- c("predicted_score")
+for (i in 1:nrow(predict_tbl)){
+  predict_tbl[i,"index"] <-  i 
+}
+
+predict_tbl %>% 
+  filter(predicted_score > 4.2) %>% 
+  pull() %>% 
+  test_full[.,]
+
 ```
+
+
+
+
 
 
 
