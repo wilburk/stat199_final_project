@@ -20,6 +20,7 @@ library(RColorBrewer)
 library(rlist)
 library(randomForest)
 library(miscTools)
+library(ggplot2)
 
 set.seed(415)
 # run load-data.R first
@@ -43,21 +44,30 @@ colnames(food_attr) <- food_attr_col
 # for the code to get significant columns
 
 ```
-```{r summary statistics}
+
+```{r initial_visualizations}
+
+food_stars <- food %>%
+  count(stars) %>% 
+  arrange(desc(stars))
+food_stars
+
+ggplot(food_stars,aes(stars,n)) +
+  geom_col()+
+  labs(title = "Distribuction of star ratings")
+
 food %>%
   count(state) %>% 
   arrange(desc(n))
 
 food %>%
-  count(stars) %>% 
-  arrange(desc(stars))
-
-food %>%
   summarise(mean = mean(stars),median = median(stars))
+
+
 ```
 
 ```{r map}
-library(ggplot2)
+
 library(ggmap)
 library(maps)
 library(mapdata)
@@ -78,6 +88,10 @@ cleanup <-
 
 base_world <- base_world_messy + cleanup
 
+food <- food %>% 
+  filter(longitude < 100 & longitude >-130) %>% 
+  filter(business_id != "vBxK_MAGuy8eWL_CCfUCUQ") %>% 
+  filter(latitude > -20 | latitude < -45)
 
 map_data <- 
   base_world +
@@ -85,6 +99,22 @@ map_data <-
              aes(x=longitude, y=latitude), colour="red", 
              fill="Pink",pch=21, size=5, alpha=I(0.5))
 map_data
+
+
+```
+
+```{r wrong_info_map}
+food %>% 
+  filter(longitude > 100)
+
+food %>% 
+  filter(longitude < -130)
+
+food %>% 
+  filter(latitude < 28 & latitude > 0)
+
+food %>% 
+  filter(latitude < -20 & latitude > -45)
 ```
 
 
