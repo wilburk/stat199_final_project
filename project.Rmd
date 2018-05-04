@@ -1002,6 +1002,10 @@ rsq.rpart(fit)
 
 
 ### EDA -- Katie
+```{r}
+library(mapdata)
+library(maps)
+```
 
 
 ### EDA -- Ivy
