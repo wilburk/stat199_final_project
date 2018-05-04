@@ -1041,6 +1041,10 @@ text(fit, use.n=TRUE, all=TRUE, cex=.8)
 
 
 ### EDA -- Katie
+```{r}
+library(mapdata)
+library(maps)
+```
 
 
 ### EDA -- Ivy
@@ -1093,4 +1097,3 @@ summary(lm_a2)$r.squared
 ```{r}
 library()
 ```
-
