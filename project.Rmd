@@ -1115,18 +1115,25 @@ text(fit, use.n=TRUE, all=TRUE, cex=.8)
 ```{r}
 library(mapdata)
 library(maps)
+
 ```
 
 ```{r}
-
-df
+df <- na.omit(analysis)
+df <- df %>% 
+  mutate(RestaurantsPriceRange2 = case_when(
+    RestaurantsPriceRange2 == 2 ~ "2",
+    RestaurantsPriceRange2 == 1 ~ "1",
+    RestaurantsPriceRange2 == 3 ~ "3",
+    RestaurantsPriceRange2 == 4 ~ "4"
+  ))
 ```
 
 
 ```{r kmeans_cluster}
 # kmeans by attributes 7 through 10
-df <- na.omit(analysis)
-kmns <- kmeans(df[,14,16], centers = 2, nstart =  25)
+df
+kmns <- kmeans(df, centers = 4, nstart =  2)
 
 # view kmeans results
 head(augment(kmns, df))
