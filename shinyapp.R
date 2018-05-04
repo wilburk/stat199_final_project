@@ -1,6 +1,7 @@
 #load packages
 library(shinydashboard)
 library(shiny)
+library(leaflet)
 
 ## ui.R ##
 ui <- fluidPage(
@@ -8,10 +9,8 @@ ui <- fluidPage(
   fluidRow(
     
     column(3, wellPanel(
-      selectInput("input_type", "Input type",
-                  c("slider", "text", "numeric", "checkbox",
-                    "checkboxGroup", "radioButtons", "selectInput",
-                    "selectInput (multi)", "date", "daterange"
+      selectInput("input_type", "Restaurant type",
+                  c("existing restaurant", "new restaurant"
                   )
       )
     )),
@@ -39,19 +38,18 @@ server <- function(input, output) {
     # Depending on input$input_type, we'll generate a different
     # UI component and send it to the client.
     switch(input$input_type,
-           "slider" = sliderInput("dynamic", "Dynamic",
-                                  min = 1, max = 20, value = 10),
-           "text" = textInput("dynamic", "Dynamic",
-                              value = "starting value"),
-           "numeric" =  numericInput("dynamic", "Dynamic",
-                                     value = 12),
-           "checkbox" = checkboxInput("dynamic", "Dynamic",
-                                      value = TRUE),
-           "checkboxGroup" = checkboxGroupInput("dynamic", "Dynamic",
-                                                choices = c("Option 1" = "option1",
-                                                            "Option 2" = "option2"),
-                                                selected = "option2"
+           
+           "existing restaurant" = checkboxGroupInput("dynamic", "What variables do we want to look at?(check all apply)",
+                                                choices = c("Delivery" = "delivery",
+                                                            "Parking" = "parking",
+                                                            "Reservation" = "reservation")
            ),
+           "new restaurant" = checkboxGroupInput("dynamic", "What variables do we want to look at?(check all apply)",
+                                                 choices = c("Delivery" = "delivery",
+                                                             "Parking" = "parking",
+                                                             "Reservation" = "reservation")
+           ),
+           
            "radioButtons" = radioButtons("dynamic", "Dynamic",
                                          choices = c("Option 1" = "option1",
                                                      "Option 2" = "option2"),
