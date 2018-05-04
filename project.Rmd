@@ -1,7 +1,7 @@
 ---
-title: "PROJECT TITLE"
-author: "NAME HERE"
-date: "TODAY'S DATE"
+title: "Final Project"
+author: "kimchi-stew"
+date: "May 4th, 2018"
 output: github_document
 ---
 
@@ -20,8 +20,6 @@ library(RColorBrewer)
 library(rlist)
 library(randomForest)
 library(miscTools)
-
-
 
 set.seed(415)
 # run load-data.R first
@@ -45,23 +43,50 @@ colnames(food_attr) <- food_attr_col
 # for the code to get significant columns
 
 ```
+```{r summary statistics}
+food %>%
+  count(state) %>% 
+  arrange(desc(n))
 
-```{r filter_by_bar_characteristics}
-# food1 %>% 
-#   filter(!is.na(attributes.NoiseLevel)) 
-# 
-# food1 %>%
-#   filter(attributes.Alcohol != "full_bar") %>% 
-#   select(attributes.Alcohol, categories)
-# 
-# food1 %>% 
-#   count(attributes.RestaurantsPriceRange2)
+food %>%
+  count(stars) %>% 
+  arrange(desc(stars))
+
+food %>%
+  summarise(mean = mean(stars),median = median(stars))
 ```
 
+```{r map}
+library(ggplot2)
+library(ggmap)
+library(maps)
+library(mapdata)
+usa <- map_data("usa")
+world_map <- map_data("world")
+p <- ggplot() + coord_fixed() +
+  xlab("") + ylab("")
 
-### EDA -- Miles
+#Add map to base plot
+base_world_messy <- p + geom_polygon(data=world_map, aes(x=long, y=lat, group=group), 
+                               colour="black", fill="black")
+cleanup <- 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        panel.background = element_rect(fill = 'white', colour = 'white'), 
+        axis.line = element_line(colour = "white"), legend.position="none",
+        axis.ticks=element_blank(), axis.text.x=element_blank(),
+        axis.text.y=element_blank())
 
-Relevant Code: 
+base_world <- base_world_messy + cleanup
+
+
+map_data <- 
+  base_world +
+  geom_point(data=food, 
+             aes(x=longitude, y=latitude), colour="red", 
+             fill="Pink",pch=21, size=5, alpha=I(0.5))
+map_data
+```
+
 
 ```{r recode_variables, message=FALSE}
 
@@ -101,29 +126,10 @@ food_attr_temp <- food_attr %>%
                         GoodForMeal.dinner		== TRUE |			
                         GoodForMeal.breakfast	== TRUE |		
                         GoodForMeal.brunch		== TRUE)	
-         # DietaryRestrictions =  DietaryRestrictions.dairy_free	== TRUE |			
-         #                        DietaryRestrictions.gluten_free	== TRUE |			
-         #                        DietaryRestrictions.vegan				== TRUE |	
-         #                        DietaryRestrictions.kosher			== TRUE |		
-         #                        DietaryRestrictions.halal			  == TRUE |		
-         #                        DietaryRestrictions.soy_free	  == TRUE |
-         #                        DietaryRestrictions.vegetarian  == TRUE)
 
 food_attr_temp[is.na(food_attr_temp)] <- 0
 food_attr_temp[food_attr_temp != 0] <- 1
 
-# test <- food_attr_temp %>%
-#   summarise_all(funs(sum(. == "True"))) %>%
-#   gather(attribute, true, 1:ncol(.))
-# 
-# food_attr_temp %>%
-#   summarise_all(funs(sum(. == "False"))) %>%
-#   gather(attribute, false, 1:ncol(.)) %>%
-#   inner_join(test, by = "attribute") %>%
-#   mutate(total = false + true,
-#          perc_true = round(true / (false + true),2)) %>%
-#   filter(total > 20, true > 0) %>%
-#   arrange(desc(total))
 
 food_attr_temp %>% 
   summarise_all(funs(sum(. == 1))) %>% 
@@ -138,13 +144,6 @@ food_attr_counts <- food_attr_temp %>%
   gather(attribute, total, 1:ncol(.)) %>% 
   arrange(desc(total))
   #filter(!str_detect(attribute, "\\."))
-
-food_attr_temp %>%
-  mutate_all(funs(as.numeric(.))) %>% 
-  select(1:65) %>% 
-  mutate(sum = rowSums(.[1:65])) %>% 
-  ggplot(aes(x = sum)) +
-  geom_histogram()
  
 level_props <- data.frame(attribute = colnames(food_attr)) %>% 
   filter(str_detect(attribute, "\\.")) %>% 
@@ -183,7 +182,6 @@ convert_dot <- function(col_name) {
   col <- food_attr[index]
   col[col == TRUE] <- paste0(col_name_short, ",")
   col[col == FALSE] <- "."
-
   return(col)
 }
 
@@ -300,9 +298,7 @@ food_attr_reduce <- food_attr_convert %>%
 
 
 
-```{r}
-
-
+```{r aggregate_categorical_variables}
 food_attr_mod_2 <- food_attr %>% 
   as.data.frame() %>% 
   select(-business_id) %>% 
@@ -350,7 +346,6 @@ food_attr_mod_2 <- food_attr %>%
   select(business_id, BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal) %>% 
   drop_na()
 
-
 ```
 
 ```{r}
@@ -360,17 +355,6 @@ food_tall <- food %>%
 (category_counts <- food_tall %>% 
   count(categories) %>% 
   arrange(desc(n)))
-
-food %>% 
-  count(categories) %>% 
-  arrange(desc(n))
-
-food %>% 
-  count(categories) %>% 
-  arrange(desc(n)) %>%
-  filter(n > 50) %>% 
-  ggplot(aes(n)) + 
-  geom_histogram()
 
 category_list <- food_tall %>% 
   count(categories) %>% 
@@ -411,12 +395,7 @@ my_reduce_2 <- function(col) {
 }
 
 #### TOTAL FOOD COLUMN
-#reduce # of categories to one 
 system.time(food$categories <- my_reduce_2(food$categories))
-
-food %>% 
-  count(categories) %>% 
-  arrange(desc(n))
 
 large_categories_list <- food %>% 
   count(categories) %>% 
@@ -425,12 +404,8 @@ large_categories_list <- food %>%
   pull(categories)
 
 
-#food_reduce <- food %>% 
-  #filter(categories %in% large_categories_list)
-
-#choose one category
 food_reduce <- food %>% 
-  filter(categories == large_categories_list[4])
+  filter(categories %in% large_categories_list)
 
 food_reduce <- food_reduce %>% 
   inner_join(food_attr_mod_2, by = "business_id")
@@ -446,17 +421,12 @@ train_full <- food_reduce %>%
 test_full <- food_reduce %>% 
   tail(1*nrow(food_reduce)/10)
 
-#stars ~ review_count +  categories + RestaurantsPriceRange2 +  BusinessAcceptsCreditCards +    GoodForKids +               BikeParking +  Alcohol +  HasTV +   NoiseLevel + RestaurantsAttire + RestaurantsGoodForGroups + Caters + WiFi +  RestaurantsReservations + RestaurantsTakeOut + aggBusinessParking + aggAmbience + aggGoodForMeal
-
-#stars ~  RestaurantsPriceRange2 +BusinessAcceptsCreditCards + Alcohol +HasTV + NoiseLevel +RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal
-
 fit_full <- randomForest(stars ~  RestaurantsPriceRange2 + categories + BusinessAcceptsCreditCards + Alcohol +  HasTV + NoiseLevel +  RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal + review_count + BikeParking + GoodForKids + RestaurantsReservations + RestaurantsTakeOut + RestaurantsAttire + RestaurantsGoodForGroups, 
                     data=train_full, 
                     importance=TRUE,  
                     ntree=50)
 varImpPlot(fit_full)
 
-library(miscTools)
 (r2 <- rSquared(test_full$stars, test_full$stars - predict(fit_full, test_full)))
 plot(fit_full)
 
@@ -512,28 +482,6 @@ r_squared <- map(categories_rows,random_forest)
 r_categories <-cbind(r_squared,categories_rows)
 r_categories_dt <- as.data.frame(r_categories, stringsAsFactors = FALSE)
 ```
-####
-random_forest(large_categories_list[1])
-large_categories_list[1]
-random_forest(large_categories_list[2])
-large_categories_list[2]
-random_forest(large_categories_list[3])
-large_categories_list[3]
-random_forest(large_categories_list[4])
-large_categories_list[4]
-random_forest(large_categories_list[5])
-large_categories_list[5]
-random_forest(large_categories_list[6])
-large_categories_list[6]
-random_forest(large_categories_list[7])
-large_categories_list[7]
-random_forest(large_categories_list[8])
-large_categories_list[8]
-random_forest(large_categories_list[9])
-large_categories_list[9]
-random_forest(large_categories_list[10])
-large_categories_list[10]
-####
 
 
 
@@ -555,57 +503,6 @@ train <- analysis %>%
 
 test <- analysis %>% 
   tail(1*nrow(analysis)/10)
-
-# analysis %>% 
-#   select(business_id) %>% 
-#   distinct() %>% 
-#   nrow()
-#%>% 
- # mutate(Alcohol = case_when(Alcohol == "none" ~ FALSE,
-  #                           Alcohol == "full_bar" | Alcohol == "beer_and_wine" ~ TRUE))
-
-# fit <- rpart(RestaurantsPriceRange2 ~ review_count +  categories +  BusinessAcceptsCreditCards+ +   GoodForKids +               BikeParking +  Alcohol +  HasTV +   NoiseLevel + RestaurantsAttire + RestaurantsGoodForGroups + Caters + WiFi +  RestaurantsReservations + RestaurantsTakeOut + aggBusinessParking + aggAmbience + aggGoodForMeal, method = "class", data = analysis)
-
-fit <- rpart(RestaurantsPriceRange2 ~  NoiseLevel + RestaurantsAttire + RestaurantsGoodForGroups + Caters + WiFi +  RestaurantsReservations + RestaurantsTakeOut + aggBusinessParking + aggAmbience + aggGoodForMeal, method = "class", data = analysis)
-
-#fit <- rpart(Alcohol ~ categories + NoiseLevel + GoodForKids + aggAmbience, method = "class", data = analysis
-
-cols = c("Alcohol", "NoiseLevel", "RestaurantsAttire", "WiFi", "aggBusinessParking", "aggAmbience", "aggGoodForMeal")
-
-analysis[cols] <- lapply(analysis[cols], factor)
-library(miscTools)
-
-fit <- randomForest(stars ~  RestaurantsPriceRange2 +  BusinessAcceptsCreditCards+               Alcohol +  HasTV +   NoiseLevel +  RestaurantsGoodForGroups + Caters + WiFi +  aggBusinessParking + aggAmbience + aggGoodForMeal, 
-                    data=train, 
-                    importance=TRUE,  
-                    ntree=3)
-varImpPlot(fit)
-
-(r2 <- rSquared(test$stars, test$stars - predict(fit, test)))
-
-plot(fit)
-
-pred <- predict(fit, newdata = test)
-table(pred, test$Alcohol)
-
-glimpse(analysis)
-
-
-
-printcp(fit) # display the results 
-plotcp(fit) # visualize cross-validation results 
-summary(fit) # detailed summary of splits
-rsq.rpart(fit)
-
-par(mfrow=c(1,2)) # two plots on one page 
-rsq.rpart(fit) # visualize cross-validation results  
-
-plot(fit, uniform=TRUE, 
-  	main="Regression Tree for Mileage")
-text(fit, use.n=TRUE, all=TRUE, cex=.8)
-
-# ambience, noiselevel, businessparking, goodformeal, caters,
-
 ```
 
 
@@ -639,131 +536,6 @@ summary(lm_a1)$r.squared
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-```{r}
-# values for each attribute
-food_attr %>% 
-  select(-business_id) %>% 
-  gather(attribute, vals, 1:ncol(.)) %>% 
-  distinct() %>% 
-  filter(!is.na(vals) & vals != TRUE & vals != FALSE) 
-
-# food_attr %>% 
-#   mutate(AmbienceList = paste(case_when(Ambience.romantic == TRUE ~ "romantic,",
-#                                          Ambience.romantic == FALSE ~ ""),
-#                                case_when(Ambience.intimate == TRUE ~ "intimate,",
-#                                          Ambience.intimate == FALSE ~ ""),
-#                                case_when(Ambience.classy == TRUE ~ "classy,",
-#                                          Ambience.classy == FALSE ~ ""),
-#                                case_when(Ambience.casual == TRUE ~ "casual,",
-#                                          Ambience.casual == FALSE ~ ""),
-#                                case_when(Ambience.upscale == TRUE ~ "upscale,",
-#                                          Ambience.upscale == FALSE ~ ""),
-#                                case_when(Ambience.trendy == TRUE ~ "trendy,",
-#                                          Ambience.trendy == FALSE ~ ""),
-#                                case_when(Ambience.divey == TRUE ~ "divey,",
-#                                          Ambience.divey == FALSE ~ ""),
-#                                case_when(Ambience.touristy == TRUE ~ "touristy,",
-#                                          Ambience.touristy == FALSE ~ ""),
-#                                case_when(Ambience.hipster == TRUE ~ "hipster,",
-#                                          Ambience.hipster == FALSE ~ ""), sep = "")) %>%
-#   mutate(AmbienceList = str_remove_all(AmbienceList, "NA")) %>% 
-#   select(starts_with("Ambience")) %>% 
-#   count(AmbienceList) %>% 
-#   arrange(desc(n))
-
-# food_attr %>% 
-#   t %>% 
-#   as.data.frame() %>% 
-#   rbind()
-# 
-# row.names(food_attr) <- food_attr$business_id
-# 
-# food_attr %>% 
-#   mutate_all(funs(str_remove(names(.), ".+\\.")))
-
-food_attr_mod <- food_attr %>% 
-  as.data.frame() %>% 
-  select(-business_id) %>% 
-  mutate(aggBusinessParking =  BusinessParking.garage	  == TRUE	|	 	
-                            BusinessParking.street    == TRUE |				
-                            BusinessParking.validated	== TRUE	|	 
-                            BusinessParking.lot       == TRUE |	
-                            BusinessParking.valet     == TRUE,
-         aggMusic =  Music.dj                == TRUE |				
-                  Music.background_music	== TRUE |			
-                  Music.no_music		      == TRUE |		
-                  Music.karaoke	          == TRUE |			
-                  Music.live              == TRUE | 
-                  Music.video             == TRUE |			
-                  Music.jukebox	          == TRUE ,	
-         aggAmbience = Ambience.romantic	== TRUE |			
-                    Ambience.intimate	== TRUE |			
-                    Ambience.classy		== TRUE |		
-                    Ambience.hipster	== TRUE |			
-                    Ambience.divey		== TRUE |		
-                    Ambience.touristy	== TRUE |			
-                    Ambience.trendy		== TRUE |		
-                    Ambience.upscale  == TRUE |
-                    Ambience.casual		== TRUE,	
-         aggBestNights = BestNights.monday	  	== TRUE |	
-                      BestNights.tuesday		== TRUE |			
-                      BestNights.friday			== TRUE |		
-                      BestNights.wednesday	== TRUE |				
-                      BestNights.thursday		== TRUE |			
-                      BestNights.sunday			== TRUE |		
-                      BestNights.saturday		== TRUE,	
-         aggGoodForMeal =  GoodForMeal.dessert   == TRUE |		
-                        GoodForMeal.latenight	== TRUE |
-                        GoodForMeal.lunch		  == TRUE |			
-                        GoodForMeal.dinner		== TRUE |			
-                        GoodForMeal.breakfast	== TRUE |		
-                        GoodForMeal.brunch		== TRUE)	%>% 
-  select(-starts_with("Ambience"),-starts_with("GoodForMeal"),-starts_with("Music"),-starts_with("BusinessParking"), -starts_with("BestNights"),-ByAppointmentOnly, -CoatCheck, -RestaurantsCounterService, -Corkage, -ByAppointmentOnly, -AgesAllowed, -BusinessAcceptsBitcoin, -BYOB, -Open24Hours)
-
-#GoodForDancing
-#BYOBCorkage
-#DogsAllowed
-#DriveThru
-
-
-# for (i in 1:ncol(food_attr)){
-#   word <- str_remove(colnames(food_attr)[i], ".+\\.")
-#   for (j in 1:nrow(food_attr)){
-#       if (is.na(food_attr[j,i])) {
-#         food_attr[j,i] = ""
-#       } else {
-#         food_attr[j,i] = word
-#       }
-#     }
-# }
-
-# food_attr_mod <- map(colnames(food_attr_mod), convert) %>% 
-#    as.data.frame()
-
-
-```
-
-
 ```{r}
 
 ### PLAN ###
@@ -793,16 +565,6 @@ cols_eval <- function(col_names, tbl) {
   
   food_attr_local <- map(col_names, function(x) convert(x,tbl)) %>% 
   as.data.frame()
-  
-  
-  # g <- food_attr_local %>% 
-  #   unite(attr,sep = "", remove = TRUE) %>% 
-  #   count(attr) %>% 
-  #   mutate(num_attr = str_count(attr, ",")) %>%
-  #   ggplot(aes(num_attr,n, color = num_attr * n)) +
-  #   geom_point(size = 3)
-  # 
-  # print(g)
   
   i <<- i + 1
   
@@ -910,385 +672,6 @@ food_attr_mod_2 <- food_attr %>%
 
 
 
-
-```{r}
-#aggregate food_attr data 
-#recode true to the name and false to na, and then aggregate all the columns 
-food_attr_1 <- food_attr %>% 
-  mutate(BusinessParking.garage = case_when(
-    BusinessParking.garage == TRUE ~ "garage",
-    BusinessParking.street == TRUE ~ "street",
-    BusinessParking.validated == TRUE ~ "validated",
-    BusinessParking.lot == TRUE ~ "lot",
-    BusinessParking.valet == TRUE ~ "valet"
-    ))
-
-food_attr_recode <- food_attr
-
-food_attr_recode$BusinessParking.garage[food_attr_recode$BusinessParking.garage == TRUE] <- "garage"
-food_attr_recode$BusinessParking.garage[food_attr_recode$BusinessParking.garage == FALSE] <- NA
- 
-food_attr_recode
-
-```
-
-
-
-
-
-```{r}
-### THese are the most significant columns I found
-
-# aggBusinessParking,aggMusic,aggAmbience,aggGoodForMeal,
-# aggBusinessParking,aggMusic,aggBestNights,aggGoodForMeal,
-# aggBusinessParking,aggAmbience,aggGoodForMeal,        highest n
-# aggBusinessParking,aggMusic,aggAmbience,
-# 
-
-
-
-
-# BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,WiFi,RestaurantsReservations,RestaurantsTakeOut
-
-# BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,WiFi,RestaurantsReservations,RestaurantsTakeOut,
-
-# BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut,
-
-convert_dot <- function(col_name) {
-  col_name_short <- str_remove(col_name, ".+\\.")
-  index <- grep(col_name, colnames(food_attr))
-  col <- food_attr[index]
-  col[col == TRUE] <- paste0(col_name_short, ",")
-  col[col == FALSE] <- "."
-
-  return(col)
-}
-
-convert_dot("BusinessParking.lot")
-
-lst <- food_attr %>% 
-  select(contains(".")) %>% 
-  colnames() 
-
-food_attr_convert <- map(lst, convert_dot) %>% 
-  as.data.frame()
-
-
-food_attr_convert <- food_attr_convert %>% 
-  mutate(aggBusinessParking =  paste0(BusinessParking.garage,	 	
-                                      BusinessParking.street,			
-                                      BusinessParking.validated,	 
-                                      BusinessParking.lot,
-                                      BusinessParking.valet, sep=""),
-         aggMusic = paste0(Music.dj,				
-                           Music.background_music,		
-                           Music.no_music,
-                           Music.karaoke	,
-                           Music.live,
-                           Music.video,			
-                           Music.jukebox, sep=""),
-         aggAmbience = paste0(Ambience.romantic,
-                              Ambience.intimate,		
-                              Ambience.classy	,	
-                              Ambience.hipster,		
-                              Ambience.divey	,	
-                              Ambience.touristy,		
-                              Ambience.trendy	,	
-                              Ambience.upscale,
-                              Ambience.casual, sep=""),
-         aggBestNights = paste0(BestNights.monday	 ,	
-                                BestNights.tuesday		,	
-                                BestNights.friday			,
-                                BestNights.wednesday	,		
-                                BestNights.thursday		,	
-                                BestNights.sunday			,
-                                BestNights.saturday, sep=""),
-         aggGoodForMeal = paste0(GoodForMeal.dessert,		
-                                 GoodForMeal.latenight,
-                                 GoodForMeal.lunch		  ,	
-                                 GoodForMeal.dinner		,	
-                                 GoodForMeal.breakfast	,
-                                 GoodForMeal.brunch, sep="")) %>% 
-  select(-contains(".")) %>% 
-  mutate_all(funs(str_replace_all(.,",+", ","))) %>% 
-  mutate_all(funs(str_replace_all(., "[NA]+", "NA"))) %>% 
-  mutate_all(funs(str_remove_all(., "\\.NA|NA\\."))) %>% 
-  mutate_all(funs(str_replace_all(., "^\\.+$", "None"))) %>% 
-  mutate_all(funs(str_remove_all(., "\\.+"))) %>% 
-  mutate_all(funs(str_remove(.,"^,"))) %>% 
-  mutate_all(funs(str_remove(.,",$")))
-
-
-food_attr_convert[food_attr_convert == "NA"] <- NA
-
-test <- food_attr_convert %>% 
-  head(100)
-
-### PROBLEM: too many collisions between variables - need to reduce to one value; don't want to eliminate too much information
-### SOLUTION1: choose in order of frequency, low to high
-### IMPLEMENTATION: iterate through, call function: if (numberofcommas + 1) > 1: split into vector, for each element in vector
-### PROBLEM: if all slightly equal numbers but still collisions, some vals might not get seen
-
-# my_reduce2 <- function(col) {
-# 
-#   indices <- which(apply(col %>% data.frame(), MARGIN = 1, FUN = (function(val_list) !is.na(val_list) & str_detect(val_list, ","))))
-# 
-#   for (i in indices) {
-#     val_list <- col[[i]]
-#     vals <- unlist(str_split(val_list, ","))
-#       freq_vect <- c()
-#       for (val in vals) {
-#         freq <- level_props %>% 
-#           filter(attribute == val) %>% 
-#           select(subtotal) %>% 
-#           pull()
-#         freq_vect <- c(freq_vect, freq)
-#       }
-#       col[[i]] <- vals[grep(min(freq_vect), freq_vect)]
-#   }
-#   return(col)
-# }
-pick_index_min <- function(freq_vect) {
-  return(grep(min(freq_vect), freq_vect))
-  #[[1]]
-}
-
-pick_index_prob <- function(freq_vect) {
-  #print(freq_vect)
-  ord_vect <- sort(freq_vect)
-  total <- reduce(freq_vect, sum)
-  ord_vect_prob <- sapply(ord_vect, function(x) x/total)
-  #print(ord_vect)
-
-  rev_vect_prob <- sort(ord_vect_prob, decreasing = TRUE)
-  for (i in 2:length(rev_vect_prob)){
-    rev_vect_prob[[i]] <- rev_vect_prob[[i]] + rev_vect_prob[[i-1]]
-  }
-  #print(rev_vect_prob)
-  
-  rand <- runif(1)
-  #print(rand)
-  #print(sapply(rev_vect_prob, function (x) x > rand))
-  #print(which(sapply(rev_vect_prob, function (x) x > rand)))
-  #print(which(sapply(rev_vect_prob, function (x) x > rand))[[1]])
-  ind <- which(sapply(rev_vect_prob, function (x) x > rand))[[1]]
-  #print(ord_vect[[ind]])
-  #print(grep(ord_vect[[ind]],freq_vect))
-  #ind <- grep(which(sapply(rev_vect_prob, function (x) x > rand))[[1]], ord_vect)
-  
-  return(grep(ord_vect[[ind]],freq_vect))
-}
-
-food_attr %>% 
-  cbind(food_attr_reduce) %>% 
-  select(-business_id)
-
-my_reduce <- function(col) {
-
-  for (i in 1:length(col)) {
-    val_list <- col[[i]]
-    if (is.na(val_list) | val_list == "None" | !str_detect(val_list, ",")) {
-      col[[i]] <- val_list
-    } else {
-      vals <- unlist(str_split(val_list, ","))
-      freq_vect <- c()
-      for (val in vals) {
-        freq <- level_props %>%
-          filter(attribute == val) %>%
-          select(subtotal) %>%
-          pull()
-        freq_vect <- c(freq_vect, freq)
-      }
-      index <- pick_index_min(freq_vect)
-      col[[i]] <- vals[index]
-    }
-  }
-  return(col)
-}
-
-#level_props
-
-food_attr_convert %>% 
-  filter(str_detect(aggBestNights, ',')) %>% 
-  select(aggBestNights) %>% 
-  head(10000) %>% 
-  mutate_all(funs(my_reduce)) %>% 
-  count(aggBestNights) %>% 
-  arrange(desc(n))
-
-food_attr_convert$aggBestNights
-
-#my_reduce(food_attr_convert$aggAmbience)
-
-food_attr_reduce <- food_attr_convert %>% 
-  mutate_all(funs(my_reduce))
-
-
-food_attr_reduce <- food_attr %>% 
-
-
-
-
-
-
-# food_attr_reduce %>% 
-#   count(aggAmbience) %>% 
-#   arrange(desc(n))
-
-```
-
-
-
-```{r}
-food_tall <- food %>% 
-  cSplit("categories", direction = "tall", sep = ",") %>% 
-  cSplit("categories", direction = "tall", sep = ",")
-
-food_tall %>% 
-  count(categories) %>% 
-  arrange(desc(n))
-
-food %>% 
-  count(categories) %>% 
-  arrange(desc(n))
-
-food %>% 
-  count(categories) %>% 
-  arrange(desc(n)) %>%
-  filter(n > 50) %>% 
-  ggplot(aes(n)) + 
-  geom_histogram()
-
-food_tall %>% 
-  count(categories) %>% 
-  filter(n > 10) %>% 
-  ggplot(aes(n)) + 
-  geom_histogram()
-```
-
-```{r}
-ggplot(food_attr, aes(NoiseLevel))+
-  geom_histogram(stat="count")
-```
-
-
-```{r}
-
-
-
-
-# ratings by alcohol & good for kids
-food %>% 
-  filter(!is.na(attributes.Alcohol), !is.na(attributes.GoodForKids)) %>% 
-  group_by(attributes.GoodForKids, attributes.Alcohol) %>% 
-  summarise(mean = mean(stars),
-            n = n())
-
-# get top # cities
-food_small %>% 
-  count(city) %>% 
-  arrange(desc(n))
-
-# filter for toronto, non null neighborhoods
-toronto_neighborhood <- food_small %>% 
-  filter(city == "Toronto", neighborhood != "")
-
-# look at top neighborhoods
-toronto_neighborhood %>%
-  count(neighborhood) %>% 
-  arrange(desc(n))
-
-# aggregate postal codes (heirarchical structure so just took two few numbers)
-toronto_neighborhood <- toronto_neighborhood %>%
-  mutate(postal_code_short = substr(postal_code, 1 , 2)) %>% 
-  filter(postal_code_short != "L1" & postal_code_short != "L3" & postal_code_short != "L5")
-
-# summary stats by neighborhood
-toronto_neighborhood %>% 
-  group_by(neighborhood) %>% 
-  summarise(mean = mean(stars), n = n()) %>% 
-  filter(n > 10) %>% 
-  arrange(desc(mean))
-
-# kmeans by attributes 7 through 10
-kmns <- kmeans(toronto_neighborhood[8:11], 10)
-
-# view kmeans results
-head(augment(kmns, toronto_neighborhood))
-tidy(kmns)
-
-# view postal codes in space
-toronto_neighborhood %>% 
-  filter(postal_code_short != "") %>% 
-  ggplot(aes(x = latitude, y = longitude, color = postal_code_short)) +
-  geom_point(alpha = 1, size = 1)
-```
-### kmeans
-
-```{r}
-# kmeans exploratory analysis
-kmns <- data.frame(k=1:9) %>% 
-  group_by(k) %>% 
-  do(kmns = kmeans(toronto_neighborhood[8:9], .$k))
-
-clusters <- kmns %>%
-    group_by(k) %>%
-    do(tidy(.$kmns[[1]]))
-
-assignments <- kmns %>%
-    group_by(k) %>%
-    do(augment(.$kmns[[1]], toronto_neighborhood))
-
-clusterings <- kmns %>%
-    group_by(k) %>%
-    do(glance(.$kmns[[1]]))
-
-ggplot(assignments, aes(latitude, longitude)) +
-    geom_point(aes(color=.cluster), alpha = 0.33, size = 0.2) +
-    facet_wrap(~ k)
-```
-
-```{r}
-
-toronto_neighborhood_tall <- toronto_neighborhood %>% 
-  cSplit("categories", direction = "tall", sep = ",") 
-
-
-# 7560
-toronto_neighborhood %>% 
-  nrow()
-
-# get list of major categories
-major_categories <- toronto_neighborhood_tall %>% 
-  count(categories) %>% 
-  filter(n > 18) %>%
-  arrange(desc(n)) %>% 
-  pull(categories)
-
-# filters to 7365 - good!
-toronto_neighborhood_tall <- toronto_neighborhood_tall %>% 
-  filter(categories %in% major_categories) %>% 
-  head(200)
-  
-
-#rpart.control(minbucket=2)
-fit <- rpart(postal_code ~ neighborhood, method = "class", data = toronto_neighborhood_tall)
-
-
-printcp(fit) # display the results 
-plotcp(fit) # visualize cross-validation results 
-summary(fit) # detailed summary of splits
-rsq.rpart(fit)
-# plot tree 
-# plot(fit, uniform=TRUE, 
-#   	main="Regression Tree for Stars")
-# text(fit, use.n=TRUE, all=TRUE, cex=.8)
-
-
-#fancyRpartPlot(fit)
-
-```
-BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal
 ```{r rpart regression tree}
 
 
@@ -1310,21 +693,6 @@ text(fit, use.n=TRUE, all=TRUE)
 ```
 
 
-
-
-
-### EDA -- Katie
-```{r}
-library(mapdata)
-library(maps)
-```
-
-```{r}
-
-df
-```
-
-
 ```{r kmeans_cluster}
 # kmeans by attributes 7 through 10
 df <- na.omit(analysis)
@@ -1334,98 +702,3 @@ kmns <- kmeans(df[,14,16], centers = 2, nstart =  25)
 head(augment(kmns, df))
 tidy(kmns)
 ```
-
-### EDA -- Ivy
-```{r}
-food_attr
-
-```
-
-
-Regression analysis for first set of attributes
-```{r}
-#Used to merge stars to food attribute
-food_stars <- food %>% 
-  select(stars)
-
-#food attr should be an aggregate dataset of all variables 
-#categorical variables should have different level in one column
-lm_data <- cbind(food_stars,food_attr)
-
-analysis1 <- lm_data %>% 
-  select(stars,BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,WiFi,RestaurantsReservations,RestaurantsTakeOut) 
-
-#omit Nas in analysis 1
-omit_a1 <- na.omit(analysis1)
- 
-#run linear analysis 
-lm_a1 <- lm(stars ~ BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+WiFi+RestaurantsReservations+RestaurantsTakeOut,data = omit_a1)
-
-AIC(lm_a1)
-summary(lm_a1)$r.squared
-```
-
-
-
-```{r}
-analysis2 <- lm_data %>% 
-  select(stars,BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut,RestaurantsTableService,OutdoorSeating,RestaurantsDelivery,aggBusinessParking,aggAmbience,aggGoodForMeal) 
-
-#omit Nas in analysis 2
-omit_a2 <-na.omit(analysis2)
- 
-#run linear analysis 
-lm_a2 <- lm(stars ~ BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+RestaurantsTableService+OutdoorSeating+RestaurantsDelivery+aggBusinessParking+aggAmbience+aggGoodForMeal,data = omit_a2)
-
-AIC(lm_a2)
-summary(lm_a2)$r.squared
-```
-
-
-
-
-```{r summary statistics}
-food %>%
-  count(state) %>% 
-  arrange(desc(n))
-
-food %>%
-  count(stars) %>% 
-  arrange(desc(stars))
-
-food %>%
-  summarise(mean = mean(stars),median = median(stars))
-```
-
-```{r map}
-library(ggplot2)
-library(ggmap)
-library(maps)
-library(mapdata)
-usa <- map_data("usa")
-world_map <- map_data("world")
-p <- ggplot() + coord_fixed() +
-  xlab("") + ylab("")
-
-#Add map to base plot
-base_world_messy <- p + geom_polygon(data=world_map, aes(x=long, y=lat, group=group), 
-                               colour="black", fill="black")
-cleanup <- 
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-        panel.background = element_rect(fill = 'white', colour = 'white'), 
-        axis.line = element_line(colour = "white"), legend.position="none",
-        axis.ticks=element_blank(), axis.text.x=element_blank(),
-        axis.text.y=element_blank())
-
-base_world <- base_world_messy + cleanup
-
-
-map_data <- 
-  base_world +
-  geom_point(data=food, 
-             aes(x=longitude, y=latitude), colour="red", 
-             fill="Pink",pch=21, size=5, alpha=I(0.5))
-map_data
-```
-
-
