@@ -701,7 +701,12 @@ text(fit, use.n=TRUE, all=TRUE)
 ```{r}
 library(mapdata)
 library(maps)
-
+library(klaR)
+```
+```{r}
+which(food$address == "Green Valley Ranch Resort, 2309 Paseo Verde Pkwy")
+food %>% 
+  filter(longitude > 110)
 ```
 
 ```{r}
@@ -713,17 +718,8 @@ df <- df %>%
     RestaurantsPriceRange2 == 3 ~ "3",
     RestaurantsPriceRange2 == 4 ~ "4"
   ))
+temp <- df[c(13,15)]
+test <- kmodes(temp, 3, iter.max = 10, weighted = FALSE)
+test
 ```
-
-
-=======
->>>>>>> 48ad904366b628259500c254869c1d177fa1669f
-```{r kmeans_cluster}
-# kmeans by attributes 7 through 10
-df
-kmns <- kmeans(df, centers = 4, nstart =  2)
-
-# view kmeans results
-head(augment(kmns, df))
-tidy(kmns)
-```
+s
