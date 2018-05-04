@@ -1032,7 +1032,7 @@ prune(fit, cp = 0.02)
 
 plot(fit, uniform=TRUE, 
   	main="Regression Tree for Mileage ")
-text(fit, use.n=TRUE, all=TRUE, cex=.8)
+text(fit, use.n=TRUE, all=TRUE)
 
 ```
 
@@ -1094,6 +1094,50 @@ summary(lm_a2)$r.squared
 ```
 
 
-```{r}
-library()
+
+
+```{r summary statistics}
+food %>%
+  count(state) %>% 
+  arrange(desc(n))
+
+food %>%
+  count(stars) %>% 
+  arrange(desc(stars))
+
+food %>%
+  summarise(mean = mean(stars),median = median(stars))
 ```
+
+```{r map}
+library(ggplot2)
+library(ggmap)
+library(maps)
+library(mapdata)
+usa <- map_data("usa")
+world_map <- map_data("world")
+p <- ggplot() + coord_fixed() +
+  xlab("") + ylab("")
+
+#Add map to base plot
+base_world_messy <- p + geom_polygon(data=world_map, aes(x=long, y=lat, group=group), 
+                               colour="black", fill="black")
+cleanup <- 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        panel.background = element_rect(fill = 'white', colour = 'white'), 
+        axis.line = element_line(colour = "white"), legend.position="none",
+        axis.ticks=element_blank(), axis.text.x=element_blank(),
+        axis.text.y=element_blank())
+
+base_world <- base_world_messy + cleanup
+
+
+map_data <- 
+  base_world +
+  geom_point(data=food, 
+             aes(x=longitude, y=latitude), colour="red", 
+             fill="Pink",pch=21, size=5, alpha=I(0.5))
+map_data
+```
+
+
