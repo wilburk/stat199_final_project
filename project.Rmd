@@ -41,7 +41,7 @@ colnames(food_attr) <- food_attr_col
 
 ```
 
-```{r}
+```{r filter_by_bar_characteristics}
 # food1 %>% 
 #   filter(!is.na(attributes.NoiseLevel)) 
 # 
@@ -58,7 +58,7 @@ colnames(food_attr) <- food_attr_col
 
 Relevant Code: 
 
-```{r message=FALSE}
+```{r recode_variables, message=FALSE}
 
 food_attr_temp <- food_attr %>% 
   select(-business_id) %>% 
