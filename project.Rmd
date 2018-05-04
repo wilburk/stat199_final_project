@@ -44,7 +44,7 @@ colnames(food_attr) <- food_attr_col
 
 ```
 
-```{r}
+```{r filter_by_bar_characteristics}
 # food1 %>% 
 #   filter(!is.na(attributes.NoiseLevel)) 
 # 
@@ -61,7 +61,7 @@ colnames(food_attr) <- food_attr_col
 
 Relevant Code: 
 
-```{r message=FALSE}
+```{r recode_variables, message=FALSE}
 
 food_attr_temp <- food_attr %>% 
   select(-business_id) %>% 
@@ -174,7 +174,7 @@ data.frame(attribute = colnames(food_attr)) %>%
 ```
 
 
-```{r}
+```{r count_columns_to_find_variables_for_analysis}
 convert_dot <- function(col_name) {
   col_name_short <- str_remove(col_name, ".+\\.")
   index <- grep(col_name, colnames(food_attr))
@@ -1214,7 +1214,7 @@ prune(fit, cp = 0.02)
 
 plot(fit, uniform=TRUE, 
   	main="Regression Tree for Mileage ")
-text(fit, use.n=TRUE, all=TRUE, cex=.8)
+text(fit, use.n=TRUE, all=TRUE)
 
 ```
 
@@ -1228,6 +1228,21 @@ library(mapdata)
 library(maps)
 ```
 
+```{r}
+
+df
+```
+
+
+```{r kmeans_cluster}
+# kmeans by attributes 7 through 10
+df <- na.omit(analysis)
+kmns <- kmeans(df[,14,16], centers = 2, nstart =  25)
+
+# view kmeans results
+head(augment(kmns, df))
+tidy(kmns)
+```
 
 ### EDA -- Ivy
 ```{r}
@@ -1276,6 +1291,50 @@ summary(lm_a2)$r.squared
 ```
 
 
-```{r}
-library()
+
+
+```{r summary statistics}
+food %>%
+  count(state) %>% 
+  arrange(desc(n))
+
+food %>%
+  count(stars) %>% 
+  arrange(desc(stars))
+
+food %>%
+  summarise(mean = mean(stars),median = median(stars))
 ```
+
+```{r map}
+library(ggplot2)
+library(ggmap)
+library(maps)
+library(mapdata)
+usa <- map_data("usa")
+world_map <- map_data("world")
+p <- ggplot() + coord_fixed() +
+  xlab("") + ylab("")
+
+#Add map to base plot
+base_world_messy <- p + geom_polygon(data=world_map, aes(x=long, y=lat, group=group), 
+                               colour="black", fill="black")
+cleanup <- 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        panel.background = element_rect(fill = 'white', colour = 'white'), 
+        axis.line = element_line(colour = "white"), legend.position="none",
+        axis.ticks=element_blank(), axis.text.x=element_blank(),
+        axis.text.y=element_blank())
+
+base_world <- base_world_messy + cleanup
+
+
+map_data <- 
+  base_world +
+  geom_point(data=food, 
+             aes(x=longitude, y=latitude), colour="red", 
+             fill="Pink",pch=21, size=5, alpha=I(0.5))
+map_data
+```
+
+
