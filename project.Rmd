@@ -337,7 +337,7 @@ food_attr_mod_2 <- food_attr %>%
 
 food_attr_mod_2 <- food_attr %>% 
   cbind(food_attr_reduce) %>% 
-  select(business_id, BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal)
+  select(business_id, BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal) %>% 
   drop_na()
 
 
@@ -1118,11 +1118,18 @@ library(maps)
 ```
 
 ```{r}
+
+df
+```
+
+
+```{r kmeans_cluster}
 # kmeans by attributes 7 through 10
-kmns <- kmeans(toronto_neighborhood[8:11], 10)
+df <- na.omit(analysis)
+kmns <- kmeans(df[,14,16], centers = 2, nstart =  25)
 
 # view kmeans results
-head(augment(kmns, toronto_neighborhood))
+head(augment(kmns, df))
 tidy(kmns)
 ```
 
