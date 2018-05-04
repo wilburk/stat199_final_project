@@ -337,7 +337,7 @@ food_attr_mod_2 <- food_attr %>%
 
 food_attr_mod_2 <- food_attr %>% 
   cbind(food_attr_reduce) %>% 
-  select(business_id, BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal) %>% 
+  select(business_id, BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal)
   drop_na()
 
 
@@ -415,6 +415,25 @@ text(fit, use.n=TRUE, all=TRUE, cex=.8)
 
 
 
+```{r linear regression}
+#Used to merge stars to food attribute
+food_stars <- food %>% 
+  select(stars,business_id)
+
+#food attr should be an aggregate dataset of all variables 
+#categorical variables should have different level in one column
+lm_data <- inner_join(food_stars,food_attr_mod_2,by= "business_id")
+
+analysis1 <- lm_data %>% 
+  select(stars,BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal) 
+
+ 
+#run linear analysis 
+lm_a1 <- lm(stars ~ BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal,data = analysis1)
+
+AIC(lm_a1)
+summary(lm_a1)$r.squared
+```
 
 
 
@@ -885,7 +904,7 @@ my_reduce <- function(col) {
   return(col)
 }
 
-level_props
+#level_props
 
 food_attr_convert %>% 
   filter(str_detect(aggBestNights, ',')) %>% 
@@ -1067,12 +1086,36 @@ rsq.rpart(fit)
 #fancyRpartPlot(fit)
 
 ```
+BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal
+```{r rpart regression tree}
+
+
+  fit <- rpart(stars ~ BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal, method = "anova", data = analysis1)
+
+printcp(fit) # display the results 
+plotcp(fit) # visualize cross-validation results 
+summary(fit) # detailed summary of splits
+
+par(mfrow=c(1,2)) # two plots on one page 
+rsq.rpart(fit) # visualize cross-validation results  
+
+prune(fit, cp = 0.02)
+
+plot(fit, uniform=TRUE, 
+  	main="Regression Tree for Mileage ")
+text(fit, use.n=TRUE, all=TRUE, cex=.8)
+
+```
 
 
 
 
 
 ### EDA -- Katie
+```{r}
+library(mapdata)
+library(maps)
+```
 
 
 ### EDA -- Ivy
@@ -1109,14 +1152,19 @@ summary(lm_a1)$r.squared
 
 ```{r}
 analysis2 <- lm_data %>% 
-  select(BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut,RestaurantsTableService,OutdoorSeating,RestaurantsDelivery,aggBusinessParking,aggAmbience,aggGoodForMeal) 
+  select(stars,BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut,RestaurantsTableService,OutdoorSeating,RestaurantsDelivery,aggBusinessParking,aggAmbience,aggGoodForMeal) 
 
 #omit Nas in analysis 2
-na.omit(analysis2)
+omit_a2 <-na.omit(analysis2)
  
 #run linear analysis 
-lm_a2 <- lm(star ~ BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+RestaurantsTableService+OutdoorSeating+RestaurantsDelivery+aggBusinessParking+aggAmbience+aggGoodForMeal,data = analysis2)
+lm_a2 <- lm(stars ~ BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+RestaurantsTableService+OutdoorSeating+RestaurantsDelivery+aggBusinessParking+aggAmbience+aggGoodForMeal,data = omit_a2)
 
 AIC(lm_a2)
+summary(lm_a2)$r.squared
 ```
 
+
+```{r}
+library()
+```
