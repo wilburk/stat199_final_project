@@ -1117,6 +1117,14 @@ library(mapdata)
 library(maps)
 ```
 
+```{r}
+# kmeans by attributes 7 through 10
+kmns <- kmeans(toronto_neighborhood[8:11], 10)
+
+# view kmeans results
+head(augment(kmns, toronto_neighborhood))
+tidy(kmns)
+```
 
 ### EDA -- Ivy
 ```{r}
