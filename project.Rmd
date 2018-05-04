@@ -27,8 +27,8 @@ food <- read_csv("data/food.csv")
 food_attr <- read_csv("data/food-attributes.csv") 
 food_hours <- read_csv("data/food-hours.csv")
 
-food_attr <- food_attr %>% 
-  select(-starts_with("DietaryRestrictions"))
+#food_attr <- food_attr %>% 
+#  select(-starts_with("DietaryRestrictions"))
 
 food_attr_col <- colnames(food_attr) %>% 
   as.data.frame() %>%
@@ -717,7 +717,7 @@ df <- df %>%
     RestaurantsPriceRange2 == 1 ~ "1",
     RestaurantsPriceRange2 == 3 ~ "3",
     RestaurantsPriceRange2 == 4 ~ "4"
-  ))
+  )) 
 temp <- df[c(13,15)]
 test <- kmodes(temp, 3, iter.max = 10, weighted = FALSE)
 test
