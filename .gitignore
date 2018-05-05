@@ -11,7 +11,6 @@ review.json
 Dataset_Challenge_Dataset_Agreement.pdf
 Yelp_Dataset_Challenge_Round_11.pdf
 food-small.csv
-food.csv
 yelp.csv
 yelp_business.csv
 yelp_business_attributes.csv
@@ -20,7 +19,6 @@ yelp_checkin.csv
 yelp_review.csv
 yelp_tip.csv
 yelp_user.csv
-food-attributes.csv
 food-hours.csv
 yelp-dataset.csv
 

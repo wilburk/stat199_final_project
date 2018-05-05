@@ -5,6 +5,10 @@ date: "May 4th, 2018"
 output: github_document
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
 ### Load Packages & Data
 
 ```{r load-packages-data}
@@ -44,6 +48,8 @@ colnames(food_attr) <- food_attr_col
 
 ```
 
+### Introduction
+
 For our final project, we worked with a Yelp dataset. Yelp is a web and mobile platform that publishes crowd-sourced reviews about local businesses, as well as online reservation service through Yelp reservations. The data we used was released by the Yelp Dataset Challenge to encourage students to conduct research and analysis. The scope of the dataset is extremely wide including business information, reviews and user data. Even the business subset contains information about 174,000 businesses and over 1.2 million business attributes, such as workday hours, parking, and ambience. Given this huge dataset, we decided to narrow down our interests and perform analysis specifically on the restaurant data. We were interested in exploring what attribute contribute to high restaurant star ratings on Yelp.  Eventually, we wanted to construct a regression model that predicts the star ratings of restaurants based on their attributes.
  
 We started by converting dataset from JSON form to CSV files. The R package jsonlite was used to stream in the json file and flatten it. The conversion happened in the load-data R script, in which we also cleaned up the data using functions from the stringr package. In addition, the data was split into multiple, csv subsets that can later be joined by the common variable, business_id. 
@@ -71,7 +77,7 @@ food %>%
 ```
 
 The first bar graph showed the counts of each star rating categories. It’s important to note that star ratings on Yelp are not continuous, but discrete, and the ratings change by increments of 0.5. Therefore, we could not approximate the ratings with a normal distribution. However, we did know from summary statistics that both mean and median star ratings are approximately 3.5. Additionally, we should consider the possible anchoring effect that one review could have on another. Reviews are not random like throwing dice and adding up the sum. Both the nature of review ratings and the discrete system implemented by Yelp should be considered when evaluating the validity and predictability of our multiple regression linear model. 
-  
+
 We also did a simple map to visualize the locations of the restaurants. This is because the Yelp website specified that there are 11 metropolitan areas within this dataset but we were seeing many more cities than 11. Therefore we just wanted to create a visualization to see all restaurant locations. 
 
 ```{r map}
@@ -116,7 +122,9 @@ map_data
 
 The map graph showed that there are indeed many more cities included in the dataset but the majority of cities are in North American and Europe. 
 
+### Methods
 
+To make our analysis more efficient we had cut down and reformat our code. The issues we had to solve for were the following: aggregate related columns by some protocol and find the subset of columns that maximize non-null rows and number of attributes. 
 
 ```{r recode_variables, message=FALSE}
 
@@ -187,21 +195,7 @@ level_props <- data.frame(attribute = colnames(food_attr)) %>%
 level_props[4,2] <- 858
 level_props[4,5] <- 0.03737
 
-# for these multi-column attributes, this tells us how many columns are usually true in any row
-data.frame(attribute = colnames(food_attr)) %>% 
-  filter(str_detect(attribute, "\\.")) %>% 
-  inner_join(food_attr_counts, by = "attribute") %>% 
-  mutate(attribute_parent = str_remove(attribute, "\\..+")) %>%
-  rename(subtotal = total) %>% 
-  inner_join(food_attr_counts, by = c("attribute_parent" = "attribute")) %>% 
-  mutate(prop = subtotal / total) %>% 
-  arrange(attribute_parent, desc(prop)) %>% 
-  group_by(attribute_parent) %>% 
-  summarise(undisjoint_factor = sum(subtotal) / median(total))
-
 ```
-
-To make our analysis more efficient we had cut down and reformat our code. The issues we had to solve for were the following: aggregate related columns by some protocol and find the subset of columns that maximize non-null rows and number of attributes. 
 
 ```{r count_columns_to_find_variables_for_analysis}
 
@@ -212,10 +206,6 @@ To make our analysis more efficient we had cut down and reformat our code. The i
 ### and if `wednesday` appears least in the dataset, the min protocol 
 ### would reduce this to `wednesday`
 
-# get the names of the multi-column attributes
-lst <- food_attr %>% 
-  select(contains(".")) %>% 
-  colnames() 
 
 # this function changes the formatting of the multicolumn attributes 
 # true values take on the name of the column, false values are periods
@@ -228,10 +218,10 @@ convert_dot <- function(col_name) {
   return(col)
 }
 
+# get the names of the multi-column attributes
 lst <- food_attr %>% 
   select(contains(".")) %>% 
   colnames() 
-
 
 food_attr_convert <- purrr::map(lst, convert_dot) %>% 
   as.data.frame()
