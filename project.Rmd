@@ -349,6 +349,14 @@ food_attr_reduce <- food_attr_convert %>%
 
 ```{r prep-data-set}
 
+convert <- function(col_name, tbl) {
+  index <- grep(col_name, colnames(tbl))
+  col <- tbl[index]
+  col[!is.na(col)] <- paste0(col_name, ",")
+  col[is.na(col)] <- ""
+  return(col)
+}
+
 column_list <- food_attr_temp %>% 
   select(1:65) %>% 
   select(-contains(".")) %>% 
@@ -416,13 +424,13 @@ all_cols %>%
   stat_function(fun = function(x) 412555/(2*x), color = "red") +
   stat_function(fun = function(x) 412555/(4*x), color = "red") +
   stat_function(fun = function(x) 412555/(8*x), color = "red") +
-  scale_color_distiller(palette = "Blues", direction = 1) + 
-  theme_minimal() + 
+  scale_color_distiller(palette = "Blues", direction = 1) +
+  theme_minimal() +
   ylim(0,75000) +
   labs(color = "Optimization Function", y = "Number of Rows", x = "Number of Attributes", title = "Finding best combination of columns", subtitle = "Optimizing for number of rows and number of attributes")
 
-(candidate_columns <- all_cols %>% 
-  top_n(3, opt_score) %>% 
+(candidate_columns <- all_cols %>%
+  top_n(3, opt_score) %>%
   pull(attr))
 
 ```
@@ -616,7 +624,7 @@ random_forest <- function(x){
     test_full[.,] %>% 
     select(-business_id, -address, -postal_code, -latitude, -longitude, -is_open) 
 
-  plot(fit_full, main = x)
+  # plot(fit_full, main = x)
   
   return(cbind(predict_tbl[1], r2, output))
   #return(as.data.frame(r2))
