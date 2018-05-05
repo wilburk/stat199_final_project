@@ -16,11 +16,13 @@ library(splitstackshape)
 library(rpart)
 library(rpart.plot)
 library(RColorBrewer)
-#library(sets)
 library(rlist)
 library(randomForest)
 library(miscTools)
 library(ggplot2)
+library(ggmap)
+library(maps)
+library(mapdata)
 
 set.seed(415)
 # run load-data.R first
@@ -38,10 +40,6 @@ food_attr_col <- colnames(food_attr) %>%
   pull()
 
 colnames(food_attr) <- food_attr_col
-
-### NOTE ###
-# See fifth code black starting at line 275 
-# for the code to get significant columns
 
 ```
 
@@ -63,14 +61,15 @@ food %>%
 food %>%
   summarise(mean = mean(stars),median = median(stars))
 
+food %>% 
+  cSplit("categories", direction = "tall", sep = ",") %>% 
+  count(categories) %>% 
+  arrange(desc(n))
+
 
 ```
 
 ```{r map}
-
-library(ggmap)
-library(maps)
-library(mapdata)
 usa <- map_data("usa")
 world_map <- map_data("world")
 p <- ggplot() + coord_fixed() +
@@ -103,23 +102,12 @@ map_data
 
 ```
 
-```{r wrong_info_map}
-food %>% 
-  filter(longitude > 100)
-
-food %>% 
-  filter(longitude < -130)
-
-food %>% 
-  filter(latitude < 28 & latitude > 0)
-
-food %>% 
-  filter(latitude < -20 & latitude > -45)
-```
-
 
 ```{r recode_variables, message=FALSE}
 
+### this block counts up non-null values 
+
+# create new var to represent if at least one of the subvalues is true
 food_attr_temp <- food_attr %>% 
   select(-business_id) %>% 
   mutate(BusinessParking =  BusinessParking.garage	  == TRUE	|	 	
@@ -157,24 +145,17 @@ food_attr_temp <- food_attr %>%
                         GoodForMeal.breakfast	== TRUE |		
                         GoodForMeal.brunch		== TRUE)	
 
+# recode null and non null with 0/1
 food_attr_temp[is.na(food_attr_temp)] <- 0
 food_attr_temp[food_attr_temp != 0] <- 1
 
-
-food_attr_temp %>% 
-  summarise_all(funs(sum(. == 1))) %>% 
-  gather(attribute, total, 1:ncol(.)) %>% 
-  arrange(desc(total)) %>% 
-  filter(!str_detect(attribute, "\\."))
-
-
-# numbers non null attribute values
+# sum up to get non null values
 food_attr_counts <- food_attr_temp %>% 
   summarise_all(funs(sum(. == 1))) %>% 
   gather(attribute, total, 1:ncol(.)) %>% 
   arrange(desc(total))
-  #filter(!str_detect(attribute, "\\."))
- 
+
+# for categories broken into multiple columns, get frequency of occurences
 level_props <- data.frame(attribute = colnames(food_attr)) %>% 
   filter(str_detect(attribute, "\\.")) %>% 
   inner_join(food_attr_counts, by = "attribute") %>% 
@@ -187,10 +168,11 @@ level_props <- data.frame(attribute = colnames(food_attr)) %>%
                               attribute != "hipster" ~ as.double(subtotal))) %>% 
   arrange(attribute_parent, desc(prop)) 
 
+# manually break tie
 level_props[4,2] <- 858
 level_props[4,5] <- 0.03737
-level_props
 
+# for these multi-column attributes, this tells us how many columns are usually true in any row
 data.frame(attribute = colnames(food_attr)) %>% 
   filter(str_detect(attribute, "\\.")) %>% 
   inner_join(food_attr_counts, by = "attribute") %>% 
@@ -206,6 +188,21 @@ data.frame(attribute = colnames(food_attr)) %>%
 
 
 ```{r count_columns_to_find_variables_for_analysis}
+
+### this code block merges the multi column attribues into single columns
+### and if there are multiple values follows a protocol (min, max, or prob) 
+### to determine which value should represent the row
+### e.g. the merged BestNights column might have `wednesday,friday,sunday`,
+### and if `wednesday` appears least in the dataset, the min protocol 
+### would reduce this to `wednesday`
+
+# get the names of the multi-column attributes
+lst <- food_attr %>% 
+  select(contains(".")) %>% 
+  colnames() 
+
+# this function changes the formatting of the multicolumn attributes 
+# true values take on the name of the column, false values are periods
 convert_dot <- function(col_name) {
   col_name_short <- str_remove(col_name, ".+\\.")
   index <- grep(col_name, colnames(food_attr))
@@ -215,14 +212,20 @@ convert_dot <- function(col_name) {
   return(col)
 }
 
+<<<<<<< HEAD
 lst <- food_attr %>% 
   select(contains(".")) %>% 
   colnames() 
 
+=======
+# run the function 
+>>>>>>> b6065b8c30b5ae8d96a2719800ca7877cd4fa409
 food_attr_convert <- purrr::map(lst, convert_dot) %>% 
   as.data.frame()
 
-
+# aggregate the columnn by pasting together the variable values;
+# since true values are the name of the column, this column tells us the names
+# of the sub attributes that are true... formatting at the end
 food_attr_convert <- food_attr_convert %>% 
   mutate(aggBusinessParking =  paste0(BusinessParking.garage,	 	
                                       BusinessParking.street,			
@@ -267,7 +270,7 @@ food_attr_convert <- food_attr_convert %>%
   mutate_all(funs(str_remove(.,"^,"))) %>% 
   mutate_all(funs(str_remove(.,",$")))
 
-
+# turn "NA" into NA
 food_attr_convert[food_attr_convert == "NA"] <- NA
 
 ### PROBLEM: too many collisions between variables - need to reduce to one value; don't want to eliminate too much information
@@ -275,14 +278,18 @@ food_attr_convert[food_attr_convert == "NA"] <- NA
 ### IMPLEMENTATION: iterate through, call function: if (numberofcommas + 1) > 1: split into vector, for each element in vector
 ### PROBLEM: if all slightly equal numbers but still collisions, some vals might not get seen
 
+# min protocol: picks the least frequent value
 pick_index_min <- function(freq_vect) {
   return(grep(min(freq_vect), freq_vect))
 }
 
+# max protocol: picks the most frequent value
 pick_index_max <- function(freq_vect) {
   return(grep(max(freq_vect), freq_vect))
 }
 
+# prob protocol: picks the value probabilistically according to frequency so that
+# same combinations of values aren't always the same
 pick_index_prob <- function(freq_vect) {
   ord_vect <- sort(freq_vect)
   total <- reduce(freq_vect, sum)
@@ -296,8 +303,8 @@ pick_index_prob <- function(freq_vect) {
   return(grep(ord_vect[[ind]],freq_vect))
 }
 
-level_props
-
+# this function reduces a row of multiple values to a single value
+# according to some protocol, in this case min
 my_reduce <- function(col) {
 
   for (i in 1:length(col)) {
@@ -321,86 +328,23 @@ my_reduce <- function(col) {
   return(col)
 }
 
+# apply the function
 food_attr_reduce <- food_attr_convert %>% 
   mutate_all(funs(my_reduce))
 
 ```
 
 
+```{r final-dataset}
 
-```{r aggregate_categorical_variables}
-food_attr_mod_2 <- food_attr %>% 
-  as.data.frame() %>% 
-  select(-business_id) %>% 
-  mutate(aggBusinessParking =  BusinessParking.garage	  == TRUE	|	 	
-                            BusinessParking.street    == TRUE |				
-                            BusinessParking.validated	== TRUE	|	 
-                            BusinessParking.lot       == TRUE |	
-                            BusinessParking.valet     == TRUE,
-         aggMusic =  Music.dj                == TRUE |				
-                  Music.background_music	== TRUE |			
-                  Music.no_music		      == TRUE |		
-                  Music.karaoke	          == TRUE |			
-                  Music.live              == TRUE | 
-                  Music.video             == TRUE |			
-                  Music.jukebox	          == TRUE ,	
-         aggAmbience = Ambience.romantic	== TRUE |			
-                    Ambience.intimate	== TRUE |			
-                    Ambience.classy		== TRUE |		
-                    Ambience.hipster	== TRUE |			
-                    Ambience.divey		== TRUE |		
-                    Ambience.touristy	== TRUE |			
-                    Ambience.trendy		== TRUE |		
-                    Ambience.upscale  == TRUE |
-                    Ambience.casual		== TRUE,	
-         aggBestNights = BestNights.monday	  	== TRUE |	
-                      BestNights.tuesday		== TRUE |			
-                      BestNights.friday			== TRUE |		
-                      BestNights.wednesday	== TRUE |				
-                      BestNights.thursday		== TRUE |			
-                      BestNights.sunday			== TRUE |		
-                      BestNights.saturday		== TRUE,	
-         aggGoodForMeal =  GoodForMeal.dessert   == TRUE |		
-                        GoodForMeal.latenight	== TRUE |
-                        GoodForMeal.lunch		  == TRUE |			
-                        GoodForMeal.dinner		== TRUE |			
-                        GoodForMeal.breakfast	== TRUE |		
-                        GoodForMeal.brunch		== TRUE)	%>% 
-  select(-starts_with("Ambience"),-starts_with("GoodForMeal"),-starts_with("Music"),-starts_with("BusinessParking"), -starts_with("BestNights"),-ByAppointmentOnly, -CoatCheck, -RestaurantsCounterService, -Corkage, -ByAppointmentOnly, -AgesAllowed, -BusinessAcceptsBitcoin, -BYOB, -Open24Hours)
-
-
-
-
+# this puts together the significant columns we found with our new merged columns, drop NA's
 food_attr_mod_2 <- food_attr %>% 
   cbind(food_attr_reduce) %>% 
   select(business_id, BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal) %>% 
   drop_na()
 
-```
-
-```{r}
-food_tall <- food %>% 
-  cSplit("categories", direction = "tall", sep = ",") 
-
-(category_counts <- food_tall %>% 
-  count(categories) %>% 
-  arrange(desc(n)))
-
-category_list <- food_tall %>% 
-  count(categories) %>% 
-  arrange(desc(n)) %>%
-  head(30) %>% 
- # summarise(n = sum(n))
-  filter(categories != "event planning & services", categories != "shopping") %>% 
-  pull(categories)
-
-food_tall_reduce <- food_tall %>% 
-  filter(categories %in% category_list)
-
-
-```
-
-```{r random_forest}
+# this function reduces a row of multiple values to a single value
+# according to some protocol, in this case max
 my_reduce_2 <- function(col) {
 
   for (i in 1:length(col)) {
@@ -424,94 +368,158 @@ my_reduce_2 <- function(col) {
   return(col)
 }
 
-#### TOTAL FOOD COLUMN
-system.time(food$categories <- my_reduce_2(food$categories))
+# reduce the categories variable
+food$categories <- my_reduce_2(food$categories)
 
+# pull the top 50 categories
 large_categories_list <- food %>% 
   count(categories) %>% 
   arrange(desc(n)) %>% 
   head(50) %>% 
   pull(categories)
 
-
+# filter by the top 50 categories
 food_reduce <- food %>% 
   filter(categories %in% large_categories_list)
 
+# merge the business info dataset with the business attributes 
 food_reduce <- food_reduce %>% 
   inner_join(food_attr_mod_2, by = "business_id")
 
-
+# turn character columns into factors
 cols = c("Alcohol", "NoiseLevel", "RestaurantsAttire", "WiFi", "aggBusinessParking", "aggAmbience", "aggGoodForMeal", "categories")
 food_reduce[cols] <- lapply(food_reduce[cols], factor)
-glimpse(food_reduce)
 
+# create training set
 train_full <- food_reduce %>% 
   head(9*nrow(food_reduce)/10)
 
+# create test set
 test_full <- food_reduce %>% 
   tail(1*nrow(food_reduce)/10)
 
+```
+
+```{r linear regression}
+
+#run linear analysis 
+lm_food <- lm(stars ~ RestaurantsPriceRange2 + categories + BusinessAcceptsCreditCards + Alcohol +  HasTV + NoiseLevel +  RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal + review_count + BikeParking + GoodForKids + RestaurantsReservations + RestaurantsTakeOut + RestaurantsAttire + RestaurantsGoodForGroups,data = food_reduce)
+
+AIC(lm_food)
+summary(lm_food)$adj.r.squared
+```
+
+```{r random_forest}
+
+# run random forest
 fit_full <- randomForest(stars ~  RestaurantsPriceRange2 + categories + BusinessAcceptsCreditCards + Alcohol +  HasTV + NoiseLevel +  RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal + review_count + BikeParking + GoodForKids + RestaurantsReservations + RestaurantsTakeOut + RestaurantsAttire + RestaurantsGoodForGroups, 
                     data=train_full, 
                     importance=TRUE,  
                     ntree=50)
+
+# inspect which elements are important
 varImpPlot(fit_full)
 
+# get r^2
 (r2 <- rSquared(test_full$stars, test_full$stars - predict(fit_full, test_full)))
+
+# plot learning curve
 plot(fit_full)
 
+# get info on model
 fit_full
 
+# predict values on test set
 predict_tbl <- predict(fit_full, test_full) %>% 
-  data.frame()
+  as.data.frame()
 
+# modify predict_tbl
 colnames(predict_tbl) <- c("predicted_score")
 for (i in 1:nrow(predict_tbl)){
   predict_tbl[i,"index"] <-  i 
 }
 
+# find rows with highest predicted stars in test set
 predict_tbl %>% 
-  filter(predicted_score > 4.2) %>% 
+  top_n(1, predicted_score) %>% 
   pull() %>% 
-  test_full[.,]
+  test_full[.,] %>% 
+  select(-business_id, -address, -postal_code, -latitude, -longitude, -is_open)
 
 ```
+
+
 ```{r random_forest_func}
 
+# this function performs the above analysis for any subset of the dataset
 random_forest <- function(x){
-food_reduce <- food %>% 
-  filter(categories == x)
+  food_reduce <- food_reduce %>% 
+    filter(categories == x)
 
-food_reduce <- food_reduce %>% 
-  inner_join(food_attr_mod_2, by = "business_id")
+  cols = c("Alcohol", "NoiseLevel", "RestaurantsAttire", "WiFi", "aggBusinessParking", "aggAmbience", "aggGoodForMeal", "categories")
+  food_reduce[cols] <- lapply(food_reduce[cols], factor)
+  
+  train_full <- food_reduce %>% 
+    head(9*nrow(food_reduce)/10)
+  
+  test_full <- food_reduce %>% 
+    tail(1*nrow(food_reduce)/10)
+  
+  fit_full <- randomForest(stars ~  RestaurantsPriceRange2 + categories + BusinessAcceptsCreditCards + Alcohol +  HasTV + NoiseLevel +  RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal + review_count + BikeParking + GoodForKids + RestaurantsReservations + RestaurantsTakeOut + RestaurantsAttire + RestaurantsGoodForGroups , 
+                      data=train_full, 
+                      importance=TRUE,  
+                      ntree=200)
+  
+  r2 <- round(rSquared(test_full$stars, test_full$stars - predict(fit_full, test_full)),3) %>% 
+    as.data.frame()
+  
+  colnames(r2) <- "r.squared" 
+    
+  predict_tbl <- predict(fit_full, test_full) %>% 
+  data.frame()
 
+  colnames(predict_tbl) <- c("predicted_score")
+  for (i in 1:nrow(predict_tbl)){
+    predict_tbl[i,"index"] <-  i 
+  }
 
-cols = c("Alcohol", "NoiseLevel", "RestaurantsAttire", "WiFi", "aggBusinessParking", "aggAmbience", "aggGoodForMeal", "categories")
-food_reduce[cols] <- lapply(food_reduce[cols], factor)
+  # find rows with highest predicted stars in test set
+  predict_tbl <- predict_tbl %>% 
+    top_n(3, predicted_score) 
+  
+  output <- predict_tbl %>% 
+    pull(index) %>% 
+    test_full[.,] %>% 
+    select(-business_id, -address, -postal_code, -latitude, -longitude, -is_open) 
 
-train_full <- food_reduce %>% 
-  head(9*nrow(food_reduce)/10)
-
-test_full <- food_reduce %>% 
-  tail(1*nrow(food_reduce)/10)
-
-fit_full <- randomForest(stars ~  RestaurantsPriceRange2 + categories + BusinessAcceptsCreditCards + Alcohol +  HasTV + NoiseLevel +  RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal + review_count + BikeParking + GoodForKids + RestaurantsReservations + RestaurantsTakeOut + RestaurantsAttire + RestaurantsGoodForGroups, 
-                    data=train_full, 
-                    importance=TRUE,  
-                    ntree=50)
-
-rSquared(test_full$stars, test_full$stars - predict(fit_full, test_full))
+  plot(fit_full, main = x)
+  
+  return(cbind(predict_tbl[1], r2, output))
+  #return(as.data.frame(r2))
 
 }
 
+
 #Apply the function random forest to each element of the vector large_categories_list
 categories_rows <-large_categories_list[1:20]
+<<<<<<< HEAD
 r_squared <- purrr::map(categories_rows,random_forest)
 
 
 r_categories <-cbind(r_squared,categories_rows)
 r_categories_dt <- as.data.frame(r_categories, stringsAsFactors = FALSE)
+=======
+best_row <- purrr::map_df(categories_rows,random_forest)
+best_row %>% 
+  arrange(desc(r.squared), desc(predicted_score)) %>% 
+  select(categories, everything())
+>>>>>>> b6065b8c30b5ae8d96a2719800ca7877cd4fa409
 ```
+
+
+
+
+
 
 
 
@@ -519,62 +527,6 @@ r_categories_dt <- as.data.frame(r_categories, stringsAsFactors = FALSE)
 
 
 ```{r}
-#rpart.control(minbucket=2)
-
-analysis <- food_tall_reduce %>% 
-  inner_join(food_attr_mod_2, by = "business_id") 
-
-
-
-#########
-
-train <- analysis %>% 
-  head(9*nrow(analysis)/10)
-
-test <- analysis %>% 
-  tail(1*nrow(analysis)/10)
-```
-
-
-
-
-
-
-
-
-
-
-```{r linear regression}
-#Used to merge stars to food attribute
-food_stars <- food %>% 
-  select(stars,business_id)
-
-#food attr should be an aggregate dataset of all variables 
-#categorical variables should have different level in one column
-lm_data <- inner_join(food_stars,food_attr_mod_2,by= "business_id")
-
-analysis1 <- lm_data %>% 
-  select(stars,BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal) 
-
- 
-#run linear analysis 
-lm_a1 <- lm(stars ~ BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal,data = analysis1)
-
-AIC(lm_a1)
-summary(lm_a1)$r.squared
-```
-
-
-
-```{r}
-
-### PLAN ###
-# Create power set of all column names
-# Create function that takes a list of column names
-# Filter the attributes data set by list
-# Calculate highest OPT score
-# Increase number of attributes until OPT score goes down
-
 convert <- function(col_name, tbl) {
   index <- grep(col_name, colnames(tbl))
   col <- tbl[index]
@@ -583,17 +535,19 @@ convert <- function(col_name, tbl) {
   return(col)
 }
 
+
 cols_eval <- function(col_names, tbl) {
   food_attr_local <- tbl
-  index_vect = c()
+  index_vect = double()
+  
   for (col_name in col_names) {
     j <- grep(col_name, colnames(tbl))
-    index_vect <- c(index_vect, j)
+    index_vect <- append(index_vect, j)
   }
   food_attr_local <- food_attr_local[index_vect] %>% 
     as.data.frame()
   
-  food_attr_local <- map(col_names, function(x) convert(x,tbl)) %>% 
+  food_attr_local <- purrr::map(col_names, function(x) convert(x,tbl)) %>% 
   as.data.frame()
   
   i <<- i + 1
@@ -611,16 +565,181 @@ cols_eval <- function(col_names, tbl) {
 
 
 powerset <- function(vect) {
-  total <- list()
+  total <- character()
+  for (m in ((27 * length(vect)) %/% 30):length(vect)) {
+    x <- combn(vect, m, simplify = FALSE)
+    total <- append(total,x)
+  }
+  return(total)
+}
+
+
+
+find_best_cols <- function(tbl) {
+  
+  pwrset <- powerset(colnames(tbl))
+  # for (test_col in pwrset){
+  #   find_best_cols(test_col)
+  # }
+  i <<- 0
+  final_lst <- list()
+  for (test_cols_wrap in pwrset){
+    for (test_cols in test_cols_wrap) {
+      temp <- c()
+      for (test_col in test_cols) {
+        temp <- c(temp, test_col)
+      }
+    print(temp)
+    final_lst <- list.append(final_lst,cols_eval(temp, tbl))
+    }
+
+  }
+  final_df <- as.data.frame(do.call("rbind", final_lst)) %>% 
+    distinct() %>%
+    mutate(group = as.factor(group))
+  
+  #final <- map_df(pwrset, function(x) cols_eval(x, tbl))
+  
+  g <- final_df %>%
+    ggplot(aes(num_attr, n, color = opt_score)) +
+    geom_point(size = 4) +
+    #scale_color_distiller(palette = "RdBu", type = "div", direction = 1)
+    scale_color_distiller(palette = "OrRd", direction = 1) + 
+    theme_minimal()
+
+  print(g)
+  
+  return(final_df %>% 
+    arrange(desc(opt_score)))
+}
+
+
+
+find_best_cols(food_attr_mod[c("RestaurantsPriceRange2", "GoodForKids")])
+
+find_best_cols(food_attr_mod[24:28])
+```
+
+
+
+```{r}
+
+### PLAN ###
+# Create power set of all column names
+# Create function that takes a list of column names
+# Filter the attributes data set by list
+# Calculate highest OPT score
+# Increase number of attributes until OPT score goes down
+
+convertxxxxxx <- function(col_name, tbl) {
+  index <- grep(col_name, colnames(tbl))
+  col <- tbl[index]
+  col[!is.na(col)] <- paste0(col_name, ",")
+  col[is.na(col)] <- ""
+  return(col)
+}
+
+cols_eval <- function(col_names, tbl) {
+  food_attr_local <- tbl
+  index_vect = double()
+  
+  for (col_name in col_names) {
+    j <- grep(col_name, colnames(tbl))
+    index_vect <- append(index_vect, j)
+  }
+  food_attr_local <- food_attr_local[index_vect] %>% 
+    as.data.frame()
+  
+  food_attr_local <- purrr::map(col_names, function(x) convert(x,tbl)) %>% 
+  as.data.frame()
+  
+  i <<- i + 1
+  
+  result <- food_attr_local %>% 
+    unite(attr,sep = "", remove = TRUE) %>% 
+    count(attr) %>% 
+    mutate(num_attr = str_count(attr, ","),
+           opt_score = num_attr*n, 
+           group = i) %>% 
+    top_n(3, num_attr * n) %>% 
+    arrange(desc(num_attr * n))
+  return(result)
+}
+
+
+powerset2 <- function(vect) {
+  total <- list(2^length(vect)-1)
   # m/2 -> m
   for (m in ((1*length(vect))%/%20):length(vect)) {
     x <- combn(vect,m)
     y <- split(x, rep(1:ncol(x), each = nrow(x)))
     total <- list.append(total,y)
   }
-  return(total)
+  #print(total)
+  for (test_cols in total) {
+    #print(test_cols)
+      temp <- character(2^length(vect)-1)
+      for (i in 1:length(test_cols)) {
+        temp[[i]] <- test_cols[[i]]
+        #print(test_col)
+      }
+    #print(temp)
+  }
+  #print(temp)
+  return(temp)
 } 
 
+powerset5 <- function(vect) {
+  total <- character(2^length(vect)-1)
+
+  i <- 0
+  for (m in 1:length(vect)) {
+    x <- combn(vect, m, simplify = FALSE)
+    for (j in 1:length(x)) {
+      i <- i+1
+      total[i] <- x[j]
+    }
+    #
+    #total <- append(total,x)
+  }
+  return(total)
+}
+powerset <- function(vect) {
+  total <- character()
+  for (m in ((27 * length(vect)) %/% 30):length(vect)) {
+    x <- combn(vect, m, simplify = FALSE)
+    total <- append(total,x)
+  }
+  #print(total[[3]])
+  return(total)
+  
+  # for (m in ((22 * length(vect)) %/% 26) : length(vect)) {
+  #   x <- combn(vect, m, simplify = FALSE)
+  #   
+  #   total <- append(total,x)
+  # }
+  # return(total)
+  # #print(total)
+  # for (test_cols in total) {
+  #   #print(test_cols)
+  #     temp <- character(2^length(vect)-1)
+  #     for (i in 1:length(test_cols)) {
+  #       temp[[i]] <- test_cols[[i]]
+  #       #print(test_col)
+  #     }
+  #   #print(temp)
+  # }
+  # #print(temp)
+  # return(temp)
+} 
+##################
+# system.time(val <- powerset(letters[1:10]))
+# for (i in 100:110) {
+#   valll <- val[[i]]
+#   for (j in 1:length(valll)) {
+#     print(valll[[j]])
+#   }
+# }
 
 
 # TEST CASE
@@ -640,11 +759,9 @@ powerset <- function(vect) {
 # 
 # resultdf <- as.data.frame(do.call("rbind", result))
 
-
 find_best_cols <- function(tbl) {
   
   pwrset <- powerset(colnames(tbl))
-  #print(pwrset)
   # for (test_col in pwrset){
   #   find_best_cols(test_col)
   # }
@@ -656,11 +773,13 @@ find_best_cols <- function(tbl) {
       for (test_col in test_cols) {
         temp <- c(temp, test_col)
       }
+    print(temp)
     final_lst <- list.append(final_lst,cols_eval(temp, tbl))
     }
+    
+    
   
   }
-
   final_df <- as.data.frame(do.call("rbind", final_lst)) %>% 
     distinct() %>%
     mutate(group = as.factor(group))
@@ -677,26 +796,69 @@ find_best_cols <- function(tbl) {
   print(g)
   
   return(final_df %>% 
-    arrange(desc(num_attr), desc(n)))
+    arrange(desc(opt_score)))
 }
-food_attr
+
+find_best_colsxxxx <- function(tbl) {
+  
+  pwrset <- powerset(colnames(tbl))
+  #print(pwrset  )
+  # for (test_col in pwrset){
+  #   find_best_cols(test_col)
+  # }
+  i <<- 0
+  final_lst <- list()
+  for (test_cols_wrap in pwrset){
+    for (test_cols in test_cols_wrap) {
+      temp <- c()
+      for (test_col in test_cols) {
+        temp <- c(temp, test_col)
+      }
+    print(temp)
+    final_lst <- list.append(final_lst,cols_eval(temp, tbl))
+    }
+    
+    
+  
+  }
+  final_df <- as.data.frame(do.call("rbind", final_lst)) %>% 
+    distinct() %>%
+    mutate(group = as.factor(group))
+  
+  #final <- map_df(pwrset, function(x) cols_eval(x, tbl))
+  
+  g <- final_df %>%
+    ggplot(aes(num_attr, n, color = opt_score)) +
+    geom_point(size = 4) +
+    #scale_color_distiller(palette = "RdBu", type = "div", direction = 1)
+    scale_color_distiller(palette = "OrRd", direction = 1) + 
+    theme_minimal()
+
+  print(g)
+  
+  return(final_df %>% 
+    arrange(desc(opt_score)))
+}
+
+find_best_cols(food_attr_mod[c("RestaurantsPriceRange2", "GoodForKids")])
+
 # This might take a while
 find_best_cols(food_attr_mod[24:28])
 
-food_attr_mod
-
-#### aggBusinessParking,aggAmbience,aggGoodForMeal,
-
-
-food_attr 
-
-food_attr_mod_2 <- food_attr %>% 
-  select(-business_id) %>%
-  cbind(food_attr_reduce) %>% 
-#  select(-starts_with("Ambience"),-starts_with("GoodForMeal"),-starts_with("Music"),-starts_with("BusinessParking"), -starts_with("BestNights"),-ByAppointmentOnly, -CoatCheck, -RestaurantsCounterService, -Corkage, -ByAppointmentOnly, -AgesAllowed, -BusinessAcceptsBitcoin, -BYOB, -Open24Hours%>% 
-  select(BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal) %>% 
-
-  drop_na()
+# food_attr_mod
+# 
+# #### aggBusinessParking,aggAmbience,aggGoodForMeal,
+# 
+# 
+# food_attr 
+# 
+# food_attr_mod_2 <- food_attr %>% 
+#   select(-business_id) %>%
+#   cbind(food_attr_reduce) %>% 
+# #  select(-starts_with("Ambience"),-starts_with("GoodForMeal"),-starts_with("Music"),-starts_with("BusinessParking"), -starts_with("BestNights"),-ByAppointmentOnly, -CoatCheck, -RestaurantsCounterService, -Corkage, -ByAppointmentOnly, -AgesAllowed, -BusinessAcceptsBitcoin, -BYOB, -Open24Hours%>% 
+#   select(BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal) %>% 
+# 
+#   drop_na()
 
 ```
 
@@ -705,7 +867,7 @@ food_attr_mod_2 <- food_attr %>%
 ```{r rpart regression tree}
 
 
-  fit <- rpart(stars ~ BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal, method = "anova", data = analysis1)
+  fit <- rpart(stars ~ categories+BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal, method = "anova", data = food_reduce)
 
 printcp(fit) # display the results 
 plotcp(fit) # visualize cross-validation results 
