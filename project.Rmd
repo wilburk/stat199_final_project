@@ -507,8 +507,7 @@ With this full dataset, we performed a linear regression using the following cha
 #run linear analysis 
 lm_food <- lm(stars ~ RestaurantsPriceRange2 + categories + BusinessAcceptsCreditCards + Alcohol +  HasTV + NoiseLevel +  RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal + review_count + BikeParking + GoodForKids + RestaurantsReservations + RestaurantsTakeOut + RestaurantsAttire + RestaurantsGoodForGroups,data = food_reduce)
 
-AIC(lm_food)
-summary(lm_food)$adj.r.squared
+summary(lm_food)$r.squared
 
 lm_food
 ```
@@ -525,18 +524,18 @@ stars_original <- food_reduce$stars
 
 p1 <-ggplot(lm_food,mapping =aes(stars_original,.fitted, color = factor(categories))) +
   geom_jitter(alpha = 0.5, width = 0.5, height = 0.5 )+
-  labs(x = "Actual stars", y = "Predicted Stars",title = "Predicted vs Actual stars") +
+  labs(x = "Actual stars", y = "Predicted Stars",title = "Predicted vs Actual Stars") +
   theme_minimal() +
-  theme(legend.position="none")
+  theme(legend.position="none",plot.title = element_text(hjust = 0.5))
 p1
 
 residual <- resid(lm_food)
 residual_jitter = jitter(residual,amount = .01)
 p2 <- ggplot(lm_food,mapping = aes(.fitted,residual_jitter, color = factor(categories))) +
   geom_jitter(alpha = 0.5, width = 0.5, height = 0.5 )+
-  labs(x = "Predicted stars", y = "Residuals",title = "Residual plot of stars")+
+  labs(x = "Predicted stars", y = "Residuals",title = "Residual Plot of Stars")+
   theme_minimal() +
-  theme(legend.position="none")+
+  theme(legend.position="none",plot.title = element_text(hjust = 0.5))+
   geom_hline(yintercept=0, linetype="dashed", color = "red")
 p2
 ```
@@ -648,13 +647,17 @@ best_row %>%
 ```
 
 ```{r rpart regression tree}
+<<<<<<< HEAD
+  fit <- rpart(stars ~ categories+BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal, method = "anova", data = food_reduce)
+=======
 
 
 fit <- rpart(stars ~ categories+BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal, method = "anova", data = food_reduce)
+>>>>>>> 5245242c042132aff887857451d2335a7ef98e47
 
 printcp(fit) # display the results 
-plotcp(fit) # visualize cross-validation results 
-summary(fit) # detailed summary of splits
+
+
 
 par(mfrow=c(1,2)) # two plots on one page 
 rsq.rpart(fit) # visualize cross-validation results  
