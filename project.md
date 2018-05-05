@@ -3,99 +3,9 @@ Final Project
 kimchi-stew
 May 4th, 2018
 
-\#\#\#Set
-    up
+\#\#\#Set up
 
 ### Load Packages & Data
-
-    ## ── Attaching packages ─────────────────────────────────────────────── tidyverse 1.2.1 ──
-
-    ## ✔ ggplot2 2.2.1     ✔ readr   1.1.1
-    ## ✔ tibble  1.4.2     ✔ purrr   0.2.4
-    ## ✔ tidyr   0.8.0     ✔ dplyr   0.7.4
-    ## ✔ ggplot2 2.2.1     ✔ forcats 0.3.0
-
-    ## ── Conflicts ────────────────────────────────────────────────── tidyverse_conflicts() ──
-    ## ✖ dplyr::filter() masks stats::filter()
-    ## ✖ dplyr::lag()    masks stats::lag()
-
-    ## randomForest 4.6-14
-
-    ## Type rfNews() to see new features/changes/bug fixes.
-
-    ## 
-    ## Attaching package: 'randomForest'
-
-    ## The following object is masked from 'package:dplyr':
-    ## 
-    ##     combine
-
-    ## The following object is masked from 'package:ggplot2':
-    ## 
-    ##     margin
-
-    ## 
-    ## Attaching package: 'maps'
-
-    ## The following object is masked from 'package:purrr':
-    ## 
-    ##     map
-
-    ## 
-    ## Attaching package: 'gridExtra'
-
-    ## The following object is masked from 'package:randomForest':
-    ## 
-    ##     combine
-
-    ## The following object is masked from 'package:dplyr':
-    ## 
-    ##     combine
-
-    ## Parsed with column specification:
-    ## cols(
-    ##   business_id = col_character(),
-    ##   name = col_character(),
-    ##   neighborhood = col_character(),
-    ##   address = col_character(),
-    ##   city = col_character(),
-    ##   state = col_character(),
-    ##   postal_code = col_character(),
-    ##   latitude = col_double(),
-    ##   longitude = col_double(),
-    ##   stars = col_double(),
-    ##   review_count = col_integer(),
-    ##   is_open = col_integer(),
-    ##   categories = col_character()
-    ## )
-
-    ## Parsed with column specification:
-    ## cols(
-    ##   .default = col_logical(),
-    ##   business_id = col_character(),
-    ##   RestaurantsPriceRange2 = col_integer(),
-    ##   Alcohol = col_character(),
-    ##   NoiseLevel = col_character(),
-    ##   RestaurantsAttire = col_character(),
-    ##   WiFi = col_character(),
-    ##   Smoking = col_character(),
-    ##   BYOBCorkage = col_character(),
-    ##   AgesAllowed = col_character()
-    ## )
-
-    ## See spec(...) for full column specifications.
-
-    ## Parsed with column specification:
-    ## cols(
-    ##   business_id = col_character(),
-    ##   hours.Friday = col_character(),
-    ##   hours.Tuesday = col_character(),
-    ##   hours.Thursday = col_character(),
-    ##   hours.Wednesday = col_character(),
-    ##   hours.Monday = col_character(),
-    ##   hours.Saturday = col_character(),
-    ##   hours.Sunday = col_character()
-    ## )
 
 ### Introduction
 
@@ -179,11 +89,7 @@ the dataset but the majority of cities are in North American and Europe.
 To make our analysis more efficient we had cut down and reformat our
 code. The issues we had to solve for were the following: aggregate
 related columns by some protocol and find the subset of columns that
-maximize non-null rows and number of
-    attributes.
-
-    ## Warning: Column `attribute` joining factor and character vector, coercing
-    ## into character vector
+maximize non-null rows and number of attributes.
 
 For the first problem, there were 6 columns that were initially broken
 up across around 30 columns. For example, the column GoodForMeal was
@@ -194,14 +100,6 @@ how to handle collisions when two or more columns were true. We created
 a function to reduce these aggregated columns, replacing their list of
 values with the value that occurs most in the
     dataset.
-
-    ## Warning: Removed 63 rows containing missing values (geom_path).
-
-    ## Warning: Removed 29 rows containing missing values (geom_path).
-
-    ## Warning: Removed 11 rows containing missing values (geom_path).
-
-    ## Warning: Removed 3 rows containing missing values (geom_path).
 
 ![](project_files/figure-gfm/find-optimal-column-1.png)<!-- -->
 
@@ -443,352 +341,6 @@ confidence interval around our predictions. We are 95% confident that
 the actual star rating will be between ±1.14 stars of the predicted
 value.
 
-    ## Warning in randomForest.default(m, y, ...): The response has five or fewer
-    ## unique values. Are you sure you want to do regression?
-    
-    ## Warning in randomForest.default(m, y, ...): The response has five or fewer
-    ## unique values. Are you sure you want to do regression?
-    
-    ## Warning in randomForest.default(m, y, ...): The response has five or fewer
-    ## unique values. Are you sure you want to do regression?
-    
-    ## Warning in randomForest.default(m, y, ...): The response has five or fewer
-    ## unique values. Are you sure you want to do regression?
-
-    ## Warning in bind_rows_(x, .id): Unequal factor levels: coercing to character
-
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-
-    ## Warning in bind_rows_(x, .id): Unequal factor levels: coercing to character
-
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-
-    ## Warning in bind_rows_(x, .id): Unequal factor levels: coercing to character
-
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-
-    ## Warning in bind_rows_(x, .id): Unequal factor levels: coercing to character
-
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-
-    ## Warning in bind_rows_(x, .id): Unequal factor levels: coercing to character
-
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-
-    ## Warning in bind_rows_(x, .id): Unequal factor levels: coercing to character
-
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-
-    ## Warning in bind_rows_(x, .id): Unequal factor levels: coercing to character
-
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-
-    ## Warning in bind_rows_(x, .id): Unequal factor levels: coercing to character
-
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-    
-    ## Warning in bind_rows_(x, .id): binding character and factor vector,
-    ## coercing into character vector
-
     ##    categories predicted_score r.squared                      name
     ## 1   fast food        3.812142     0.367                  Hot-Star
     ## 2   fast food        3.732741     0.367               Chick-fil-A
@@ -874,7 +426,7 @@ algorithm (14.7%). This hierarchy in results isn’t unusual, as the
 random forest algorithm is a machine learning algorithm that trains a
 multitude of decision trees, rather than just one, to optimize fit to a
 dataset. The failure of the individual decision tree is likely because
-of the 29 variables inputted into the simple decision tree, only four
+of the 19 variables inputted into the simple decision tree, only four
 were used to predict star rating, leading to possible
 underspecification. Lastly, the low R-squared value for linear
 regression model implies that this model poorly predicts star rating,
@@ -882,9 +434,13 @@ and possibly that the data is non-linear. If the data is truly
 non-linear, the results for the random forest and decision tree
 algorithms would be similarly affected. In conclusion, of the three
 methods we used, the random forest algorithm was most accurate in
-predicting star rating. However, the low R-squared values for all of the
-models suggests that our data is non-linear, thus prompting the failure
-of our methods.
+predicting star rating. At first, we believed that our low R-squared
+value for the linear regression model was because our data was
+non-linear. However, both the random forest and decision tree algorithms
+are further optimized for non-linear data, and they also returned low
+R-squared values. This ultimately suggests that our research question
+can’t be answered with this dataset, and that in future project
+explorations, we should investigate different kinds of questions.
 
 The primary difficulty we encountered in this project was preparing our
 rough data into a dataset we could use for analysis. For several

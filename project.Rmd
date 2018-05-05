@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ### Load Packages & Data
 
-```{r load-packages-data}
+```{r load-packages-data, message=FALSE}
 library(stringr)
 library(stringi)
 library(tidyverse)
@@ -128,7 +128,7 @@ The map graph showed that there are indeed many more cities included in the data
 
 To make our analysis more efficient we had cut down and reformat our code. The issues we had to solve for were the following: aggregate related columns by some protocol and find the subset of columns that maximize non-null rows and number of attributes. 
 
-```{r recode_variables, message=FALSE}
+```{r recode_variables, message=FALSE, warning=FALSE}
 
 ### this block counts up non-null values 
 
@@ -199,7 +199,7 @@ level_props[4,5] <- 0.03737
 
 ```
 
-```{r count_columns_to_find_variables_for_analysis}
+```{r count_columns_to_find_variables_for_analysis, warning=FALSE}
 
 ### this code block merges the multi column attribues into single columns
 ### and if there are multiple values follows a protocol (min, max, or prob) 
@@ -341,7 +341,7 @@ food_attr_reduce <- food_attr_convert %>%
 
 For the first problem, there were 6 columns that were initially broken up across around 30 columns. For example, the column GoodForMeal was initially split up as a column for every meal encoded as true or false, since a restaurant could be good for multiple meals. We needed to aggregate these values into a single column, but we had to figure out how to handle collisions when two or more columns were true. We created a function to reduce these aggregated columns, replacing their list of values with the value that occurs most in the dataset. 
 
-```{r prep-data-set}
+```{r prep-data-set, warning = FALSE}
 
 convert <- function(col_name, tbl) {
   index <- grep(col_name, colnames(tbl))
@@ -375,7 +375,7 @@ test_columns <- purrr::map(colnames(test_df), function(x) convert(x,food_attr)) 
   sapply(function(x) unlist(strsplit(x, split=",")))
 ```
 
-```{r find-optimal-column}
+```{r find-optimal-column, warning=FALSE}
 cols_eval <- function(col_names, tbl) {
   food_attr_local <- tbl[col_names]
   output <- food_attr_local %>% 
@@ -598,7 +598,7 @@ predict_tbl %>%
 
 Next, we constructed a random forest. The random forest algorithm is an ensemble learning method that can be used for classification, regression and other tasks. By training a multitude of decision trees, random forest is optimized to have better predicted power. It discovers more complex dependencies at the cost of more time needed to fit a model. Compared to linear regression, random forest outperforms when there are nonlinear dependencies. The resulting R-squared of the model was 0.277, meaning that approximately 27.7% of the variability in the star ratings was accounted for by the model. In addition we got RMSE of 0.333, giving a standard deviation of 0.57. From this we can construct a 95% confidence interval around our predictions. We are 95% confident that the actual star rating will be between ±1.14 stars of the predicted value.
 
-```{r random_forest_func, message=FALSE}
+```{r random_forest_func, message=FALSE, warning=FALSE}
 
 # this function performs the above analysis for any subset of the dataset
 random_forest <- function(x){
@@ -670,7 +670,7 @@ Finally, we used this random forest analysis to look at subsets of our dataset. 
 ### Discussion and Conclusions
 
 
-Of the three analytical methods we used, the random forest algorithm best predicted the star rating of a restaurant. The algorithm accounted for 27.7% of the variance in the star data, a greater percentage than either the linear regression model (23.3%) or the decision tree algorithm (14.7%). This hierarchy in results isn’t unusual, as the random forest algorithm is a machine learning algorithm that trains a multitude of decision trees, rather than just one, to optimize fit to a dataset. The failure of the individual decision tree is likely because of the 19 variables inputted into the simple decision tree, only four were used to predict star rating, leading to possible underspecification. Lastly, the low R-squared value for linear regression model implies that this model poorly predicts star rating, and possibly that the data is non-linear. If the data is truly non-linear, the results for the random forest and decision tree algorithms would be similarly affected. In conclusion, of the three methods we used, the random forest algorithm was most accurate in predicting star rating. However, the low R-squared values for all of the models suggests that our data is non-linear, thus prompting the failure of our methods. 
+Of the three analytical methods we used, the random forest algorithm best predicted the star rating of a restaurant. The algorithm accounted for 27.7% of the variance in the star data, a greater percentage than either the linear regression model (23.3%) or the decision tree algorithm (14.7%). This hierarchy in results isn’t unusual, as the random forest algorithm is a machine learning algorithm that trains a multitude of decision trees, rather than just one, to optimize fit to a dataset. The failure of the individual decision tree is likely because of the 19 variables inputted into the simple decision tree, only four were used to predict star rating, leading to possible underspecification. Lastly, the low R-squared value for linear regression model implies that this model poorly predicts star rating, and possibly that the data is non-linear. If the data is truly non-linear, the results for the random forest and decision tree algorithms would be similarly affected. In conclusion, of the three methods we used, the random forest algorithm was most accurate in predicting star rating. At first, we believed that our low R-squared value for the linear regression model was because our data was non-linear. However, both the random forest and decision tree algorithms are further optimized for non-linear data, and they also returned low R-squared values. This ultimately suggests that our research question can't be answered with this dataset, and that in future project explorations, we should investigate different kinds of questions.  
  
 The primary difficulty we encountered in this project was preparing our rough data into a dataset we could use for analysis. For several variables, such as BusinessParking and GoodForMeal, the data was not aggregated, so we recoded the variables so that they presented information in levels, rather than multiple variable columns. Another challenge was determining which variables were most relevant to our analysis. Our process involved trying many different combinations of columns and then checking how many observations with those variables had no null values. We optimized for both the maximum number of columns as well as for non-null values. Ultimately, we determined that the aforementioned set of variables produced the largest number of observations with non-null values.
  
