@@ -226,14 +226,11 @@ convert_dot <- function(col_name) {
   return(col)
 }
 
-<<<<<<< HEAD
 lst <- food_attr %>% 
   select(contains(".")) %>% 
   colnames() 
 
-=======
-# run the function 
->>>>>>> b6065b8c30b5ae8d96a2719800ca7877cd4fa409
+
 food_attr_convert <- purrr::map(lst, convert_dot) %>% 
   as.data.frame()
 
@@ -546,30 +543,19 @@ random_forest <- function(x){
 #Apply the function random forest to each element of the vector large_categories_list
 
 categories_rows <-large_categories_list[1:20]
-<<<<<<< HEAD
+
 r_squared <- purrr::map(categories_rows,random_forest)
 
 
 r_categories <-cbind(r_squared,categories_rows)
 r_categories_dt <- as.data.frame(r_categories, stringsAsFactors = FALSE)
-=======
+
 best_row <- purrr::map_df(categories_rows,random_forest)
 best_row %>% 
   arrange(desc(r.squared), desc(predicted_score)) %>% 
   select(categories, everything())
-<<<<<<< HEAD
-=======
->>>>>>> b6065b8c30b5ae8d96a2719800ca7877cd4fa409
-```
-
-
-
-
->>>>>>> f9e462eaf2dc4d99b5615c5884cf8ced5ceee0ab
 
 ```
-
-
 
 
 ```{r}
@@ -948,10 +934,6 @@ text(fit, use.n=TRUE, all=TRUE)
 
 ```
 
-<<<<<<< HEAD
-=======
-
-
 
 
 
@@ -986,4 +968,3 @@ test
 plot(temp[,1:2], col = test$cluster)
 ```
 
->>>>>>> f9e462eaf2dc4d99b5615c5884cf8ced5ceee0ab
