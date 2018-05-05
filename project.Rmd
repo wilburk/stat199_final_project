@@ -49,16 +49,23 @@ colnames(food_attr) <- food_attr_col
 
 food_stars <- food %>%
   count(stars) %>% 
-  arrange(desc(stars))
+  arrange(desc(stars)) 
 food_stars
 
-ggplot(food_stars,aes(stars,n)) +
-  geom_col()+
-  labs(title = "Distribuction of star ratings")
+ggplot(data = food_stars,aes(x = stars,y= n)) +
+  geom_bar(stat = "identity",fill = "steelblue")+
+  labs(title = "Count of of star ratings",y = "count")+
+  geom_text(aes(label = n),position = "stack",vjust = 0) +
+  scale_x_continuous(breaks = c(1,1.5,2,2.5,3,3.5,4,4.5,5))
 
-food %>%
+food_states <- food %>%
   count(state) %>% 
-  arrange(desc(n))
+  arrange(desc(n)) %>% 
+  filter(n>100)
+
+ggplot(food_states,aes(state,n)) +
+  geom_col()+
+  labs(title = "Number of restaurants in corresponding states")
 
 food %>%
   summarise(mean = mean(stars),median = median(stars))
@@ -71,6 +78,7 @@ food %>%
 library(ggmap)
 library(maps)
 library(mapdata)
+
 usa <- map_data("usa")
 world_map <- map_data("world")
 p <- ggplot() + coord_fixed() +
@@ -89,9 +97,10 @@ cleanup <-
 base_world <- base_world_messy + cleanup
 
 food <- food %>% 
-  filter(longitude < 100 & longitude >-130) %>% 
-  filter(business_id != "vBxK_MAGuy8eWL_CCfUCUQ") %>% 
-  filter(latitude > -20 | latitude < -45)
+  filter(longitude < 100 & longitude >-130) 
+  #%>% 
+  #filter(business_id != "vBxK_MAGuy8eWL_CCfUCUQ") %>% 
+  #filter(latitude > -20 | latitude < -45)
 
 map_data <- 
   base_world +
@@ -476,6 +485,7 @@ predict_tbl %>%
   test_full[.,]
 
 ```
+
 ```{r random_forest_func}
 
 random_forest <- function(x){
@@ -505,16 +515,13 @@ rSquared(test_full$stars, test_full$stars - predict(fit_full, test_full))
 }
 
 #Apply the function random forest to each element of the vector large_categories_list
-categories_rows <-large_categories_list[1:20]
-r_squared <- map(categories_rows,random_forest)
+
+r_squared <- purrr::map(large_categories_list[1:50],random_forest)
 
 
-r_categories <-cbind(r_squared,categories_rows)
+r_categories <-cbind(r_squared,large_categories_list[1:50])
 r_categories_dt <- as.data.frame(r_categories, stringsAsFactors = FALSE)
 ```
-
-
-
 
 
 
@@ -536,14 +543,6 @@ test <- analysis %>%
 ```
 
 
-
-
-
-
-
-
-
-
 ```{r linear regression}
 #Used to merge stars to food attribute
 food_stars <- food %>% 
@@ -562,6 +561,8 @@ lm_a1 <- lm(stars ~ BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKid
 
 AIC(lm_a1)
 summary(lm_a1)$r.squared
+summary(lm_a1)$adj.r.squared
+lm_a1
 ```
 
 
