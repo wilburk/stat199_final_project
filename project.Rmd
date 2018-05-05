@@ -113,6 +113,7 @@ map_data
 
 
 ```
+
 The map graph showed that there are indeed many more cities included in the dataset but the majority of cities are in North American and Europe. 
 
 
@@ -200,6 +201,7 @@ data.frame(attribute = colnames(food_attr)) %>%
 
 ```
 
+To make our analysis more efficient we had cut down and reformat our code. The issues we had to solve for were the following: aggregate related columns by some protocol and find the subset of columns that maximize non-null rows and number of attributes. 
 
 ```{r count_columns_to_find_variables_for_analysis}
 
@@ -374,14 +376,14 @@ test_columns <- purrr::map(colnames(test_df), function(x) convert(x,food_attr)) 
   unite(attr,sep = "", remove = TRUE) %>% 
   count(attr) %>% 
   mutate(num_attr = str_count(attr, ","),
-          opt_score = num_attr*n, 
-          group = i) %>% 
+          opt_score = num_attr*n) %>% 
   filter(opt_score > 0) %>% 
   arrange(desc(num_attr * n)) %>% 
   pull(attr) %>% 
   sapply(function(x) unlist(strsplit(x, split=",")))
 ```
 
+For the first problem, there were 6 columns that were initially broken up across around 30 columns. For example, the column GoodForMeal was initially split up as a column for every meal encoded as true or false, since a restaurant could be good for multiple meals. We needed to aggregate these values into a single column, but we had to figure out how to handle collisions when two or more columns were true. We created a function to reduce these aggregated columns, replacing their list of values with the value that occurs most in the dataset. 
 
 ```{r find-optimal-column}
 cols_eval <- function(col_names, tbl) {
@@ -409,13 +411,13 @@ powerset <- function(vect) {
 
 find_best_cols <- function(tbl) {
   #pwrset <- powerset(colnames(tbl))
-  result <- map_df(test_columns, function(x) cols_eval11(x,tbl)) %>%               
+  result <- map_df(test_columns, function(x) cols_eval(x,tbl)) %>%               
     arrange(desc(opt_score)) %>% 
     select(attr, opt_score, n, num_attr)
   return(result)
 }
 
-all_cols <- find_best_cols11(test_df[1:22])
+all_cols <- find_best_cols(test_df[1:22])
 all_cols %>%
   ggplot(aes(x = num_attr, y = n, z = opt_score, color = (n*num_attr))) +
   geom_point(size = 4, alpha = 1) +
@@ -435,6 +437,8 @@ all_cols %>%
 
 ```
 
+Now that we handled that, we had to find the subset of columns that would maximize the amount of data that we would have. This means maximizing rows times columns. We created a function that calculates the amount of data in the subset of some combination of tables. To find the optimal combination, we would have to try every possible combination of columns, which is equivalent to the powerset of the columns. And since we were working with 22 columns. This would be 2^22. So we clearly couldn’t do that. To get around this we first looked at the possible combinations of columns that actually existed in the dataset. This cut down our search space from 2^22 to around 5000. A significant improvement. From there we calculated the subset of the dataset that would maximize our data.
+
 ```{r final-dataset}
 
 # use the significant columns found to trim down dataset
@@ -443,6 +447,13 @@ food_attr_mod_2 <- food_attr %>%
   cbind(food_attr_reduce) %>% 
   select(business_id, BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal) %>% 
   drop_na()
+
+food_tall <- food %>% 
+  cSplit("categories", direction = "tall", sep = ",") 
+
+category_counts <- food_tall %>% 
+  count(categories) %>% 
+  arrange(desc(n))
 
 # this function reduces a row of multiple values to a single value
 # according to some protocol, in this case max
@@ -515,6 +526,26 @@ lm_food
 Predicted stars = 3.86 – 0.03(BusinessAcceptsCreditCards) + 0.02(RestaurantsPriceRange2) – 0.09(GoodForKids) + 0.08(BikeParking) – 0.17(Alcoholfull_bar) – 0.06(Alcoholnone) + 0.04(HasTVTRUE) – 0.18(NoiseLevelloud) + 0.14(NoiseLevelquiet) – 0.43(NoiseLevelvery_loud) + 0.10(RestaurantsAttiredressy) + 0.21(RestaurantsAttireformal) – 0.10(RestaurantsGoodForGroupsTRUE) + 0.17(CatersTrue) – 0.02(WiFino) – 0.12(WiFipaid) + 0.02(RestaurantsReservationsTRUE) – 0.15(RestaurantsTakeOutTRUE) + 0.01(aggBusinessParkinglot) – 0.13(aggBusinessParkingNone) + 0.14(aggBusinessParkingstreet) – 0.13(aggBusinessParkingNone) + 0.14(aggBusinessParkingstreet) + 0.01(aggBusinessParkingValet) + 0.07(aggBusinessParkingvalidated) + 0.14(aggAmbienceclassy) + 0.11(aggAmbiencedivey) + 0.31(aggAmbiencehipster) + 0.24(aggAmbienceintimate) – 0.12(aggAmbienceNone) + 0.16(aggAmbienceromantic) – 0.20(aggAmbiencetouristy) + 0.21(aggAmbiencetrendy) + 0.18(aggAmbienceupscale) + 0.23(aggGoodForMealbrunch) + 0.11(aggGoodForMealdessert) + 0.20(aggGoodForMealdinner) + 0.02(aggGoodForMeallatenight) + 0.13(aggGoodForMeallunch) + 0.04(aggGoodForMealNone)
 
 This linear model suggests that in an alternate reality, if a restaurant demonstrated none of the above characteristics, the star rating would be 3.86. For each attribute a restaurant has, its rating increases or decreases according to each attribute’s coefficient multiplied by the value assigned to the attribute. The adjusted R-squared value for this linear model is 0.1584309, meaning that this model accounts for approximately 15.8% of the variability in the stars values. This low score indicates that the linear regression model insufficiently describes the data and has low predictive power.  
+
+```{r rpart regression tree}
+fit <- rpart(stars ~ categories+BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal, method = "anova", data = food_reduce)
+
+printcp(fit) # display the results 
+
+
+
+par(mfrow=c(1,2)) # two plots on one page 
+rsq.rpart(fit) # visualize cross-validation results  
+
+prune(fit, cp = 0.02)
+
+plot(fit, uniform=TRUE, 
+  	main="Regression Tree for Mileage ")
+text(fit, use.n=TRUE, all=TRUE)
+
+```
+
+Since the R-squared value we got from the multiple linear regression model was quite low, we wanted to explore results from other potential regression methods. Our next attempt was to build a regression decision tree using the rpart package. The decision tree algorithm is better at capturing non-linearity in the data by dividing space into smaller sub-spaces. In the following code chunk, we grew the tree using the same variables as we had in the multiple linear regression model. The resulting R-squared of the model was 0.14736, meaning that approximately 14.7% of the variability in the star ratings was accounted for by the model. 
   
 Next, we plotted two graph p1 and p2. P1 showed the predicted stars vs. acutal stars and we colored that data point by restaurant categories. P2 demonstrated the residuals vs. predicted stars. The center of the residual plot is approximately in the middle with data points radiating in a circular shape. 
 
@@ -579,6 +610,8 @@ predict_tbl %>%
   select(-business_id, -address, -postal_code, -latitude, -longitude, -is_open)
 
 ```
+
+Next, we constructed a random forest. The random forest algorithm is an ensemble learning method that can be used for classification, regression and other tasks. By training a multitude of decision trees, random forest is optimized to have better predicted power. It discovers more complex dependencies at the cost of more time needed to fit a model. Compared to linear regression, random forest outperforms when there are nonlinear dependencies. The resulting R-squared of the model was 0.277, meaning that approximately 27.7% of the variability in the star ratings was accounted for by the model. In addition we got RMSE of 0.333, giving a standard deviation of 0.57. From this we can construct a 95% confidence interval around our predictions. We are 95% confident that the actual star rating will be between ±1.14 stars of the predicted value.
 
 ```{r random_forest_func}
 
@@ -646,28 +679,6 @@ best_row %>%
 
 ```
 
-```{r rpart regression tree}
-<<<<<<< HEAD
-  fit <- rpart(stars ~ categories+BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal, method = "anova", data = food_reduce)
-=======
-
-
-fit <- rpart(stars ~ categories+BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal, method = "anova", data = food_reduce)
->>>>>>> 5245242c042132aff887857451d2335a7ef98e47
-
-printcp(fit) # display the results 
-
-
-
-par(mfrow=c(1,2)) # two plots on one page 
-rsq.rpart(fit) # visualize cross-validation results  
-
-prune(fit, cp = 0.02)
-
-plot(fit, uniform=TRUE, 
-  	main="Regression Tree for Mileage ")
-text(fit, use.n=TRUE, all=TRUE)
-
-```
+Finally, we used this random forest analysis to look at subsets of our dataset. We looked at the most frequent categories and then one by one filtered the dataset by one of them. We did a random forest analysis for each one, getting R-squared values as well as the top row in that dataset with the highest predicted star rating. Interestingly, fast_food was the category whose star values were best predicted by the data — it had an R-squared value of 38%!
 
 
