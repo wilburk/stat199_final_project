@@ -43,6 +43,7 @@ food_attr_col <- colnames(food_attr) %>%
 colnames(food_attr) <- food_attr_col
 
 ```
+
 For our final project, we worked with a Yelp dataset. Yelp is a web and mobile platform that publishes crowd-sourced reviews about local businesses, as well as online reservation service through Yelp reservations. The data we used was released by the Yelp Dataset Challenge to encourage students to conduct research and analysis. The scope of the dataset is extremely wide including business information, reviews and user data. Even the business subset contains information about 174,000 businesses and over 1.2 million business attributes, such as workday hours, parking, and ambience. Given this huge dataset, we decided to narrow down our interests and perform analysis specifically on the restaurant data. We were interested in exploring what attribute contribute to high restaurant star ratings on Yelp.  Eventually, we wanted to construct a regression model that predicts the star ratings of restaurants based on their attributes.
  
 We started by converting dataset from JSON form to CSV files. The R package jsonlite was used to stream in the json file and flatten it. The conversion happened in the load-data R script, in which we also cleaned up the data using functions from the stringr package. In addition, the data was split into multiple, csv subsets that can later be joined by the common variable, business_id. 
@@ -50,8 +51,8 @@ We started by converting dataset from JSON form to CSV files. The R package json
 2)    Food_attributes.csv (business attributes information): 69070 observations and 66 variables, including GoodForKids, RestaurantsAttire, WiFi, etc.
 3)    Food_hours.csv (business hour information): 69070 observations and 8 variables, including hours.Monday, hours.Tuesday, etc.
 
-
 Before building our linear model, we created rudimentary visualizations to get a sense of the overall trend of the data. 
+
 ```{r initial_visualizations}
 
 food_stars <- food %>%
@@ -68,10 +69,9 @@ food %>%
   summarise(mean = mean(stars),median = median(stars))
 
 ```
+
 The first bar graph showed the counts of each star rating categories. It’s important to note that star ratings on Yelp are not continuous, but discrete, and the ratings change by increments of 0.5. Therefore, we could not approximate the ratings with a normal distribution. However, we did know from summary statistics that both mean and median star ratings are approximately 3.5. Additionally, we should consider the possible anchoring effect that one review could have on another. Reviews are not random like throwing dice and adding up the sum. Both the nature of review ratings and the discrete system implemented by Yelp should be considered when evaluating the validity and predictability of our multiple regression linear model. 
   
-    
-    
 We also did a simple map to visualize the locations of the restaurants. This is because the Yelp website specified that there are 11 metropolitan areas within this dataset but we were seeing many more cities than 11. Therefore we just wanted to create a visualization to see all restaurant locations. 
 
 ```{r map}
@@ -346,8 +346,90 @@ food_attr_reduce <- food_attr_convert %>%
 ```
 
 
+
+```{r prep-data-set}
+
+column_list <- food_attr_temp %>% 
+  select(1:65) %>% 
+  select(-contains(".")) %>% 
+  summarise_all(funs(sum(. == 1))) %>% 
+  gather(attribute, total, 1:ncol(.)) %>% 
+  arrange(desc(total)) %>% 
+  filter(total > 10000) %>% 
+  pull(attribute)
+
+test_df <- food_attr[c(column_list)] %>% 
+  cbind(food_attr_reduce)
+
+test_columns <- purrr::map(colnames(test_df), function(x) convert(x,food_attr)) %>% 
+  as.data.frame() %>% 
+  unite(attr,sep = "", remove = TRUE) %>% 
+  count(attr) %>% 
+  mutate(num_attr = str_count(attr, ","),
+          opt_score = num_attr*n, 
+          group = i) %>% 
+  filter(opt_score > 0) %>% 
+  arrange(desc(num_attr * n)) %>% 
+  pull(attr) %>% 
+  sapply(function(x) unlist(strsplit(x, split=",")))
+```
+
+
+```{r find-optimal-column}
+cols_eval <- function(col_names, tbl) {
+  food_attr_local <- tbl[col_names]
+  output <- food_attr_local %>% 
+    drop_na() %>% 
+    summarise(n = nrow(.),
+              attr = paste0(col_names, collapse = ",")) %>% 
+    mutate(num_attr = length(col_names),
+           opt_score = n*num_attr)
+  
+  return(output)
+}
+
+powerset <- function(vect) {
+  total <- character()
+  range <- c(((6 * length(vect)) %/% 10):length(vect))
+  print(range)
+  for (m in range) {
+    x <- combn(vect, m, simplify = FALSE)
+    total <- append(total,x)
+  }
+  return(total)
+}
+
+find_best_cols <- function(tbl) {
+  #pwrset <- powerset(colnames(tbl))
+  result <- map_df(test_columns, function(x) cols_eval11(x,tbl)) %>%               
+    arrange(desc(opt_score)) %>% 
+    select(attr, opt_score, n, num_attr)
+  return(result)
+}
+
+all_cols <- find_best_cols11(test_df[1:22])
+all_cols %>%
+  ggplot(aes(x = num_attr, y = n, z = opt_score, color = (n*num_attr))) +
+  geom_point(size = 4, alpha = 1) +
+  stat_function(fun = function(x) 412555/(.5*x), color = "red") +
+  stat_function(fun = function(x) 412555/x, color = "red") +
+  stat_function(fun = function(x) 412555/(2*x), color = "red") +
+  stat_function(fun = function(x) 412555/(4*x), color = "red") +
+  stat_function(fun = function(x) 412555/(8*x), color = "red") +
+  scale_color_distiller(palette = "Blues", direction = 1) + 
+  theme_minimal() + 
+  ylim(0,75000) +
+  labs(color = "Optimization Function", y = "Number of Rows", x = "Number of Attributes", title = "Finding best combination of columns", subtitle = "Optimizing for number of rows and number of attributes")
+
+(candidate_columns <- all_cols %>% 
+  top_n(3, opt_score) %>% 
+  pull(attr))
+
+```
+
 ```{r final-dataset}
 
+# use the significant columns found to trim down dataset
 # this puts together the significant columns we found with our new merged columns, drop NA's
 food_attr_mod_2 <- food_attr %>% 
   cbind(food_attr_reduce) %>% 
@@ -412,6 +494,7 @@ test_full <- food_reduce %>%
 ```
 
 With this full dataset, we performed a linear regression using the following characteristics to predict star score: food within price range of 11-30(dollars), good for kids, acceptance of credit cards, bike parking, alcohol sold, TV present, noise level, dress code, fit for groups, catering ability, WiFi present, accepts reservations, takeout offered, parking available, ambience, and best mealtime. 
+
 ```{r linear regression}
 #run linear analysis 
 lm_food <- lm(stars ~ RestaurantsPriceRange2 + categories + BusinessAcceptsCreditCards + Alcohol +  HasTV + NoiseLevel +  RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal + review_count + BikeParking + GoodForKids + RestaurantsReservations + RestaurantsTakeOut + RestaurantsAttire + RestaurantsGoodForGroups,data = food_reduce)
@@ -420,12 +503,13 @@ summary(lm_food)$r.squared
 
 lm_food
 ```
+
 Predicted stars = 3.86 – 0.03(BusinessAcceptsCreditCards) + 0.02(RestaurantsPriceRange2) – 0.09(GoodForKids) + 0.08(BikeParking) – 0.17(Alcoholfull_bar) – 0.06(Alcoholnone) + 0.04(HasTVTRUE) – 0.18(NoiseLevelloud) + 0.14(NoiseLevelquiet) – 0.43(NoiseLevelvery_loud) + 0.10(RestaurantsAttiredressy) + 0.21(RestaurantsAttireformal) – 0.10(RestaurantsGoodForGroupsTRUE) + 0.17(CatersTrue) – 0.02(WiFino) – 0.12(WiFipaid) + 0.02(RestaurantsReservationsTRUE) – 0.15(RestaurantsTakeOutTRUE) + 0.01(aggBusinessParkinglot) – 0.13(aggBusinessParkingNone) + 0.14(aggBusinessParkingstreet) – 0.13(aggBusinessParkingNone) + 0.14(aggBusinessParkingstreet) + 0.01(aggBusinessParkingValet) + 0.07(aggBusinessParkingvalidated) + 0.14(aggAmbienceclassy) + 0.11(aggAmbiencedivey) + 0.31(aggAmbiencehipster) + 0.24(aggAmbienceintimate) – 0.12(aggAmbienceNone) + 0.16(aggAmbienceromantic) – 0.20(aggAmbiencetouristy) + 0.21(aggAmbiencetrendy) + 0.18(aggAmbienceupscale) + 0.23(aggGoodForMealbrunch) + 0.11(aggGoodForMealdessert) + 0.20(aggGoodForMealdinner) + 0.02(aggGoodForMeallatenight) + 0.13(aggGoodForMeallunch) + 0.04(aggGoodForMealNone)
 
 This linear model suggests that in an alternate reality, if a restaurant demonstrated none of the above characteristics, the star rating would be 3.86. For each attribute a restaurant has, its rating increases or decreases according to each attribute’s coefficient multiplied by the value assigned to the attribute. The adjusted R-squared value for this linear model is 0.1584309, meaning that this model accounts for approximately 15.8% of the variability in the stars values. This low score indicates that the linear regression model insufficiently describes the data and has low predictive power.  
   
-    
 Next, we plotted two graph p1 and p2. P1 showed the predicted stars vs. acutal stars and we colored that data point by restaurant categories. P2 demonstrated the residuals vs. predicted stars. The center of the residual plot is approximately in the middle with data points radiating in a circular shape. 
+
 ```{r predicted_residual}
 predicted_stars <- fitted(lm_food)
 stars_original <- food_reduce$stars
@@ -538,9 +622,7 @@ random_forest <- function(x){
 
 }
 
-
 #Apply the function random forest to each element of the vector large_categories_list
-
 categories_rows <-large_categories_list[1:20]
 
 r_squared <- purrr::map(categories_rows,random_forest)
@@ -556,365 +638,14 @@ best_row %>%
 
 ```
 
-
-```{r}
-#rpart.control(minbucket=2)
-
-analysis <- food_tall_reduce %>% 
-  inner_join(food_attr_mod_2, by = "business_id") 
-
-convert <- function(col_name, tbl) {
-  index <- grep(col_name, colnames(tbl))
-  col <- tbl[index]
-  col[!is.na(col)] <- paste0(col_name, ",")
-  col[is.na(col)] <- ""
-  return(col)
-}
-
-```
-
-```{r linear regression}
-#Used to merge stars to food attribute
-food_stars <- food %>% 
-  select(stars,business_id)
-
-
-cols_eval <- function(col_names, tbl) {
-  food_attr_local <- tbl
-  index_vect = double()
-  
-  for (col_name in col_names) {
-    j <- grep(col_name, colnames(tbl))
-    index_vect <- append(index_vect, j)
-  }
-  food_attr_local <- food_attr_local[index_vect] %>% 
-    as.data.frame()
-  
-  food_attr_local <- purrr::map(col_names, function(x) convert(x,tbl)) %>% 
-  as.data.frame()
-  
-  i <<- i + 1
-  
-  result <- food_attr_local %>% 
-    unite(attr,sep = "", remove = TRUE) %>% 
-    count(attr) %>% 
-    mutate(num_attr = str_count(attr, ","),
-           opt_score = num_attr*n, 
-           group = i) %>% 
-    top_n(3, num_attr * n) %>% 
-    arrange(desc(num_attr * n))
-  return(result)
-}
-
-
-powerset <- function(vect) {
-  total <- character()
-  for (m in ((27 * length(vect)) %/% 30):length(vect)) {
-    x <- combn(vect, m, simplify = FALSE)
-    total <- append(total,x)
-  }
-  return(total)
-}
-
-
-
-find_best_cols <- function(tbl) {
-  
-  pwrset <- powerset(colnames(tbl))
-  # for (test_col in pwrset){
-  #   find_best_cols(test_col)
-  # }
-  i <<- 0
-  final_lst <- list()
-  for (test_cols_wrap in pwrset){
-    for (test_cols in test_cols_wrap) {
-      temp <- c()
-      for (test_col in test_cols) {
-        temp <- c(temp, test_col)
-      }
-    print(temp)
-    final_lst <- list.append(final_lst,cols_eval(temp, tbl))
-    }
-
-  }
-  final_df <- as.data.frame(do.call("rbind", final_lst)) %>% 
-    distinct() %>%
-    mutate(group = as.factor(group))
-  
-  #final <- map_df(pwrset, function(x) cols_eval(x, tbl))
-  
-  g <- final_df %>%
-    ggplot(aes(num_attr, n, color = opt_score)) +
-    geom_point(size = 4) +
-    #scale_color_distiller(palette = "RdBu", type = "div", direction = 1)
-    scale_color_distiller(palette = "OrRd", direction = 1) + 
-    theme_minimal()
-
-  print(g)
-  
-  return(final_df %>% 
-    arrange(desc(opt_score)))
-}
-
-
-
-find_best_cols(food_attr_mod[c("RestaurantsPriceRange2", "GoodForKids")])
-
-AIC(lm_a1)
-summary(lm_a1)$r.squared
-summary(lm_a1)$adj.r.squared
-lm_a1
-
-find_best_cols(food_attr_mod[24:28])
-
-```
-
-
-
-```{r}
-
-### PLAN ###
-# Create power set of all column names
-# Create function that takes a list of column names
-# Filter the attributes data set by list
-# Calculate highest OPT score
-# Increase number of attributes until OPT score goes down
-
-convertxxxxxx <- function(col_name, tbl) {
-  index <- grep(col_name, colnames(tbl))
-  col <- tbl[index]
-  col[!is.na(col)] <- paste0(col_name, ",")
-  col[is.na(col)] <- ""
-  return(col)
-}
-
-cols_eval <- function(col_names, tbl) {
-  food_attr_local <- tbl
-  index_vect = double()
-  
-  for (col_name in col_names) {
-    j <- grep(col_name, colnames(tbl))
-    index_vect <- append(index_vect, j)
-  }
-  food_attr_local <- food_attr_local[index_vect] %>% 
-    as.data.frame()
-  
-  food_attr_local <- purrr::map(col_names, function(x) convert(x,tbl)) %>% 
-  as.data.frame()
-  
-  i <<- i + 1
-  
-  result <- food_attr_local %>% 
-    unite(attr,sep = "", remove = TRUE) %>% 
-    count(attr) %>% 
-    mutate(num_attr = str_count(attr, ","),
-           opt_score = num_attr*n, 
-           group = i) %>% 
-    top_n(3, num_attr * n) %>% 
-    arrange(desc(num_attr * n))
-  return(result)
-}
-
-
-powerset2 <- function(vect) {
-  total <- list(2^length(vect)-1)
-  # m/2 -> m
-  for (m in ((1*length(vect))%/%20):length(vect)) {
-    x <- combn(vect,m)
-    y <- split(x, rep(1:ncol(x), each = nrow(x)))
-    total <- list.append(total,y)
-  }
-  #print(total)
-  for (test_cols in total) {
-    #print(test_cols)
-      temp <- character(2^length(vect)-1)
-      for (i in 1:length(test_cols)) {
-        temp[[i]] <- test_cols[[i]]
-        #print(test_col)
-      }
-    #print(temp)
-  }
-  #print(temp)
-  return(temp)
-} 
-
-powerset5 <- function(vect) {
-  total <- character(2^length(vect)-1)
-
-  i <- 0
-  for (m in 1:length(vect)) {
-    x <- combn(vect, m, simplify = FALSE)
-    for (j in 1:length(x)) {
-      i <- i+1
-      total[i] <- x[j]
-    }
-    #
-    #total <- append(total,x)
-  }
-  return(total)
-}
-powerset <- function(vect) {
-  total <- character()
-  for (m in ((27 * length(vect)) %/% 30):length(vect)) {
-    x <- combn(vect, m, simplify = FALSE)
-    total <- append(total,x)
-  }
-  #print(total[[3]])
-  return(total)
-  
-  # for (m in ((22 * length(vect)) %/% 26) : length(vect)) {
-  #   x <- combn(vect, m, simplify = FALSE)
-  #   
-  #   total <- append(total,x)
-  # }
-  # return(total)
-  # #print(total)
-  # for (test_cols in total) {
-  #   #print(test_cols)
-  #     temp <- character(2^length(vect)-1)
-  #     for (i in 1:length(test_cols)) {
-  #       temp[[i]] <- test_cols[[i]]
-  #       #print(test_col)
-  #     }
-  #   #print(temp)
-  # }
-  # #print(temp)
-  # return(temp)
-} 
-##################
-# system.time(val <- powerset(letters[1:10]))
-# for (i in 100:110) {
-#   valll <- val[[i]]
-#   for (j in 1:length(valll)) {
-#     print(valll[[j]])
-#   }
-# }
-
-
-# TEST CASE
-# cols_eval(c("GoodForKids", "RestaurantsGoodForGroups", "HasTV", "RestaurantsPriceRange2", "BusinessAcceptsCreditCards"), food_attr_mod)
-# pwrset <- powerset(c("GoodForKids", "RestaurantsGoodForGroups", "HasTV", "RestaurantsPriceRange2", "BusinessAcceptsCreditCards")) 
-# 
-# result <- list()
-# for (test_cols_wrap in pwrset){
-#   for (test_cols in test_cols_wrap) {
-#     temp <- c()
-#     for (test_col in test_cols) {
-#       temp <- c(temp, test_col)
-#     }
-#     result <- list.append(result,cols_eval(temp, food_attr_mod))
-#   }
-# }
-# 
-# resultdf <- as.data.frame(do.call("rbind", result))
-
-find_best_cols <- function(tbl) {
-  
-  pwrset <- powerset(colnames(tbl))
-  # for (test_col in pwrset){
-  #   find_best_cols(test_col)
-  # }
-  i <<- 0
-  final_lst <- list()
-  for (test_cols_wrap in pwrset){
-    for (test_cols in test_cols_wrap) {
-      temp <- c()
-      for (test_col in test_cols) {
-        temp <- c(temp, test_col)
-      }
-    print(temp)
-    final_lst <- list.append(final_lst,cols_eval(temp, tbl))
-    }
-    
-    
-  
-  }
-  final_df <- as.data.frame(do.call("rbind", final_lst)) %>% 
-    distinct() %>%
-    mutate(group = as.factor(group))
-  
-  #final <- map_df(pwrset, function(x) cols_eval(x, tbl))
-  
-  g <- final_df %>%
-    ggplot(aes(num_attr, n, color = opt_score)) +
-    geom_point(size = 4) +
-    #scale_color_distiller(palette = "RdBu", type = "div", direction = 1)
-    scale_color_distiller(palette = "OrRd", direction = 1) + 
-    theme_minimal()
-
-  print(g)
-  
-  return(final_df %>% 
-    arrange(desc(opt_score)))
-}
-
-find_best_colsxxxx <- function(tbl) {
-  
-  pwrset <- powerset(colnames(tbl))
-  #print(pwrset  )
-  # for (test_col in pwrset){
-  #   find_best_cols(test_col)
-  # }
-  i <<- 0
-  final_lst <- list()
-  for (test_cols_wrap in pwrset){
-    for (test_cols in test_cols_wrap) {
-      temp <- c()
-      for (test_col in test_cols) {
-        temp <- c(temp, test_col)
-      }
-    print(temp)
-    final_lst <- list.append(final_lst,cols_eval(temp, tbl))
-    }
-    
-    
-  
-  }
-  final_df <- as.data.frame(do.call("rbind", final_lst)) %>% 
-    distinct() %>%
-    mutate(group = as.factor(group))
-  
-  #final <- map_df(pwrset, function(x) cols_eval(x, tbl))
-  
-  g <- final_df %>%
-    ggplot(aes(num_attr, n, color = opt_score)) +
-    geom_point(size = 4) +
-    #scale_color_distiller(palette = "RdBu", type = "div", direction = 1)
-    scale_color_distiller(palette = "OrRd", direction = 1) + 
-    theme_minimal()
-
-  print(g)
-  
-  return(final_df %>% 
-    arrange(desc(opt_score)))
-}
-
-find_best_cols(food_attr_mod[c("RestaurantsPriceRange2", "GoodForKids")])
-
-# This might take a while
-find_best_cols(food_attr_mod[24:28])
-
-# food_attr_mod
-# 
-# #### aggBusinessParking,aggAmbience,aggGoodForMeal,
-# 
-# 
-# food_attr 
-# 
-# food_attr_mod_2 <- food_attr %>% 
-#   select(-business_id) %>%
-#   cbind(food_attr_reduce) %>% 
-# #  select(-starts_with("Ambience"),-starts_with("GoodForMeal"),-starts_with("Music"),-starts_with("BusinessParking"), -starts_with("BestNights"),-ByAppointmentOnly, -CoatCheck, -RestaurantsCounterService, -Corkage, -ByAppointmentOnly, -AgesAllowed, -BusinessAcceptsBitcoin, -BYOB, -Open24Hours%>% 
-#   select(BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal) %>% 
-# 
-#   drop_na()
-
-```
-
-
-
 ```{r rpart regression tree}
+<<<<<<< HEAD
   fit <- rpart(stars ~ categories+BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal, method = "anova", data = food_reduce)
+=======
+
+
+fit <- rpart(stars ~ categories+BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal, method = "anova", data = food_reduce)
+>>>>>>> 5245242c042132aff887857451d2335a7ef98e47
 
 printcp(fit) # display the results 
 
@@ -931,37 +662,4 @@ text(fit, use.n=TRUE, all=TRUE)
 
 ```
 
-
-
-
-### EDA -- Katie
-```{r}
-library(mapdata)
-library(maps)
-library(klaR)
-```
-
-```{r}
-which(food$address == "Green Valley Ranch Resort, 2309 Paseo Verde Pkwy")
-food %>% 
-  filter(longitude > 110)
-```
-
-```{r}
-set.seed(05042018)
-df <- na.omit(analysis)
-df <- df %>% 
-  mutate(RestaurantsPriceRange2 = case_when(
-    RestaurantsPriceRange2 == 2 ~ "2",
-    RestaurantsPriceRange2 == 1 ~ "1",
-    RestaurantsPriceRange2 == 3 ~ "3",
-    RestaurantsPriceRange2 == 4 ~ "4"
-  )) 
-df
-temp <- df[c(13,15,18,28)]
-temp
-test <- kmodes(temp[,1:4], 6, iter.max = 10, weighted = FALSE)
-test
-plot(temp[,1:2], col = test$cluster)
-```
 
