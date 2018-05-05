@@ -36,16 +36,3 @@ food %>%
 food %>%
   select(1:13) %>% 
   write_csv("data/food.csv")
-
-### reviews data
-
-# reviews <- stream_in(file("yelp-data/review.json"), flatten = TRUE)
-# 
-# biz_id <- food_small %>% 
-#   select(business_id) %>% 
-#   pull()
-# 
-# reviews_food <- reviews %>%
-#   filter(business_id %in% biz_id)
-# 
-# write_csv(reviews_food, "data/reviews-food" )

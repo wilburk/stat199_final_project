@@ -5,12 +5,9 @@ date: "May 4th, 2018"
 output: github_document
 ---
 ###Set up
+
 ```{r setup, include = FALSE}
 # set the echo option to FALSE to see how the document looks with the code suppressed
-knitr::opts_chunk$set(echo = FALSE)
-```
-
-```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
@@ -340,9 +337,11 @@ my_reduce <- function(col) {
 food_attr_reduce <- food_attr_convert %>% 
   mutate_all(funs(my_reduce))
 
+food_attr_reduce
+
 ```
 
-
+For the first problem, there were 6 columns that were initially broken up across around 30 columns. For example, the column GoodForMeal was initially split up as a column for every meal encoded as true or false, since a restaurant could be good for multiple meals. We needed to aggregate these values into a single column, but we had to figure out how to handle collisions when two or more columns were true. We created a function to reduce these aggregated columns, replacing their list of values with the value that occurs most in the dataset. 
 
 ```{r prep-data-set}
 
@@ -377,8 +376,6 @@ test_columns <- purrr::map(colnames(test_df), function(x) convert(x,food_attr)) 
   pull(attr) %>% 
   sapply(function(x) unlist(strsplit(x, split=",")))
 ```
-
-For the first problem, there were 6 columns that were initially broken up across around 30 columns. For example, the column GoodForMeal was initially split up as a column for every meal encoded as true or false, since a restaurant could be good for multiple meals. We needed to aggregate these values into a single column, but we had to figure out how to handle collisions when two or more columns were true. We created a function to reduce these aggregated columns, replacing their list of values with the value that occurs most in the dataset. 
 
 ```{r find-optimal-column}
 cols_eval <- function(col_names, tbl) {
@@ -509,7 +506,7 @@ test_full <- food_reduce %>%
 
 With this full dataset, we performed a linear regression using the following characteristics to predict star score: food within price range of 11-30(dollars), good for kids, acceptance of credit cards, bike parking, alcohol sold, TV present, noise level, dress code, fit for groups, catering ability, WiFi present, accepts reservations, takeout offered, parking available, ambience, and best mealtime. 
 
-```{r linear regression}
+```{r linear-regression}
 #run linear analysis 
 lm_food <- lm(stars ~ RestaurantsPriceRange2 + categories + BusinessAcceptsCreditCards + Alcohol +  HasTV + NoiseLevel +  RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal + review_count + BikeParking + GoodForKids + RestaurantsReservations + RestaurantsTakeOut + RestaurantsAttire + RestaurantsGoodForGroups,data = food_reduce)
 
@@ -518,19 +515,10 @@ summary(lm_food)$r.squared
 lm_food
 ```
 
-<<<<<<< HEAD
-This linear model suggests that in an alternate reality, if a restaurant demonstrated none of the above characteristics, the star rating would be 3.86. For each attribute a restaurant has, its rating increases or decreases according to each attribute’s coefficient multiplied by the value assigned to the attribute. The adjusted R-squared value for this linear model is 0.0.2330, meaning that this model accounts for approximately 23.3% of the variability in the stars values. This low score indicates that the linear regression model insufficiently describes the data and has low predictive power.  
-=======
-Predicted stars = 3.86 – 0.03(BusinessAcceptsCreditCards) + 0.02(RestaurantsPriceRange2) – 0.09(GoodForKids) + 0.08(BikeParking) – 0.17(Alcoholfull_bar) – 0.06(Alcoholnone) + 0.04(HasTVTRUE) – 0.18(NoiseLevelloud) + 0.14(NoiseLevelquiet) – 0.43(NoiseLevelvery_loud) + 0.10(RestaurantsAttiredressy) + 0.21(RestaurantsAttireformal) – 0.10(RestaurantsGoodForGroupsTRUE) + 0.17(CatersTrue) – 0.02(WiFino) – 0.12(WiFipaid) + 0.02(RestaurantsReservationsTRUE) – 0.15(RestaurantsTakeOutTRUE) + 0.01(aggBusinessParkinglot) – 0.13(aggBusinessParkingNone) + 0.14(aggBusinessParkingstreet) – 0.13(aggBusinessParkingNone) + 0.14(aggBusinessParkingstreet) + 0.01(aggBusinessParkingValet) + 0.07(aggBusinessParkingvalidated) + 0.14(aggAmbienceclassy) + 0.11(aggAmbiencedivey) + 0.31(aggAmbiencehipster) + 0.24(aggAmbienceintimate) – 0.12(aggAmbienceNone) + 0.16(aggAmbienceromantic) – 0.20(aggAmbiencetouristy) + 0.21(aggAmbiencetrendy) + 0.18(aggAmbienceupscale) + 0.23(aggGoodForMealbrunch) + 0.11(aggGoodForMealdessert) + 0.20(aggGoodForMealdinner) + 0.02(aggGoodForMeallatenight) + 0.13(aggGoodForMeallunch) + 0.04(aggGoodForMealNone)
+This linear model suggests that in an alternate reality, if a restaurant demonstrated none of the above characteristics, the star rating would be 3.86. For each attribute a restaurant has, its rating increases or decreases according to each attribute’s coefficient multiplied by the value assigned to the attribute. The adjusted R-squared value for this linear model is 0.233, meaning that this model accounts for approximately 23.3% of the variability in the stars values. This low score indicates that the linear regression model insufficiently describes the data and has low predictive power.  
 
-This linear model suggests that in an alternate reality, if a restaurant demonstrated none of the above characteristics, the star rating would be 3.86. For each attribute a restaurant has, its rating increases or decreases according to each attribute’s coefficient multiplied by the value assigned to the attribute. The adjusted R-squared value for this linear model is 0.1584309, meaning that this model accounts for approximately 15.8% of the variability in the stars values. This low score indicates that the linear regression model insufficiently describes the data and has low predictive power.  
-
-```{r rpart regression tree}
+```{r rpart-regression-tree}
 fit <- rpart(stars ~ categories+BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal, method = "anova", data = food_reduce)
-
-printcp(fit) # display the results 
-
-
 
 par(mfrow=c(1,2)) # two plots on one page 
 rsq.rpart(fit) # visualize cross-validation results  
@@ -544,7 +532,6 @@ text(fit, use.n=TRUE, all=TRUE)
 ```
 
 Since the R-squared value we got from the multiple linear regression model was quite low, we wanted to explore results from other potential regression methods. Our next attempt was to build a regression decision tree using the rpart package. The decision tree algorithm is better at capturing non-linearity in the data by dividing space into smaller sub-spaces. In the following code chunk, we grew the tree using the same variables as we had in the multiple linear regression model. The resulting R-squared of the model was 0.14736, meaning that approximately 14.7% of the variability in the star ratings was accounted for by the model. 
->>>>>>> 30976b0135394a49412bf2774545a1ad0ca525b9
   
 Next, we plotted two graph p1 and p2. P1 showed the predicted stars vs. acutal stars and we colored that data point by restaurant categories. P2 demonstrated the residuals vs. predicted stars. The center of the residual plot is approximately in the middle with data points radiating in a circular shape. 
 
@@ -678,27 +665,15 @@ best_row %>%
 
 ```
 
-<<<<<<< HEAD
-```{r rpart regression tree}
-
-fit <- rpart(stars ~ categories+BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal, method = "anova", data = food_reduce)
-
-printcp(fit) # display the results 
-
-par(mfrow=c(1,2)) # two plots on one page 
-rsq.rpart(fit) # visualize cross-validation results  
-
-prune(fit, cp = 0.02)
-
-plot(fit, uniform=TRUE, 
-  	main="Regression Tree for Mileage ")
-text(fit, use.n=TRUE, all=TRUE)
-
-```
-=======
 Finally, we used this random forest analysis to look at subsets of our dataset. We looked at the most frequent categories and then one by one filtered the dataset by one of them. We did a random forest analysis for each one, getting R-squared values as well as the top row in that dataset with the highest predicted star rating. Interestingly, fast_food was the category whose star values were best predicted by the data — it had an R-squared value of 38%!
->>>>>>> 30976b0135394a49412bf2774545a1ad0ca525b9
+
+### Discussion and Conclusions
 
 
+Of the three analytical methods we used, the random forest algorithm best predicted the star rating of a restaurant. The algorithm accounted for 27.7% of the variance in the star data, a greater percentage than either the linear regression model (23.3%) or the decision tree algorithm (14.7%). This hierarchy in results isn’t unusual, as the random forest algorithm is a machine learning algorithm that trains a multitude of decision trees, rather than just one, to optimize fit to a dataset. The failure of the individual decision tree is likely because of the 29 variables inputted into the simple decision tree, only four were used to predict star rating, leading to possible underspecification. Lastly, the low R-squared value for linear regression model implies that this model poorly predicts star rating, and possibly that the data is non-linear. If the data is truly non-linear, the results for the random forest and decision tree algorithms would be similarly affected. In conclusion, of the three methods we used, the random forest algorithm was most accurate in predicting star rating. However, the low R-squared values for all of the models suggests that our data is non-linear, thus prompting the failure of our methods. 
+ 
+The primary difficulty we encountered in this project was preparing our rough data into a dataset we could use for analysis. For several variables, such as BusinessParking and GoodForMeal, the data was not aggregated, so we recoded the variables so that they presented information in levels, rather than multiple variable columns. Another challenge was determining which variables were most relevant to our analysis. Our process involved trying many different combinations of columns and then checking how many observations with those variables had no null values. We optimized for both the maximum number of columns as well as for non-null values. Ultimately, we determined that the aforementioned set of variables produced the largest number of observations with non-null values.
+ 
+The principal failure of our project is that our analysis cannot address the intangible, qualitative aspects of what leads to a restaurant earning more stars on Yelp. Star ratings are not completely random. There are many factors that can affect how a user decides on a particular restaurant rating. For example, personal taste is a huge factor in an individual’s decision-making process, and because taste varies significantly across individuals, there is no standardized way measure it. Factors such as distance to a restaurant or neighborhood can greatly influence individual choice. Depending on the location, an individual’s ability to even reach certain restaurant locations varies. Restaurant rating on Yelp is based on the feedback of its users, thus restaurants can fall victim to the anchoring effect. Previous positive reviews or a high star rating influence the subsequent reviews and ratings by other users of the same restaurant. Consequently, we cannot say with confidence that any star rating is an objective measure of a restaurant’s quality. Furthermore, Yelp requires users to rank restaurants in 0.5 increments and similarly rounds the mean star rating to the nearest 0.5 value. Because the predicted results are calculated in a continuous fashion, they will always be off from the actual, possible star values. Considering both the limitations of human ratings and Yelp’s use of a discrete rating system, the research question we have asked for this dataset might not receive the best predicted value. 
 
-
+There are several aspects that we can do differently to improve the results of our data analysis. As we have discussed earlier, the random forest algorithm produces a better R-squared value as it works better for non-linear dependencies. Therefore, we can transform our data and fit a logarithmic or exponential regression model to evaluate whether they produce more promising results. Additionally, we did not utilize all relevant variables given in the dataset. For example, we can better characterize restaurant by putting them into clusters by location and perform regression models based on the different clusters. We can also expand on our research question. Instead of just predicting star ratings based on attributes, we can take a step further to provide restaurants suggestions on how they can improve their star ratings knowing their current attributes. This will be a more useful application of such data analysis. 

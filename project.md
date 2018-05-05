@@ -5,12 +5,6 @@ May 4th, 2018
 
 ### Load Packages & Data
 
-``` r
-library(stringr)
-library(stringi)
-library(tidyverse)
-```
-
     ## ── Attaching packages ──────────────────────────────────────────────────────────────────────────── tidyverse 1.2.1 ──
 
     ## ✔ ggplot2 2.2.1     ✔ readr   1.1.1
@@ -21,16 +15,6 @@ library(tidyverse)
     ## ── Conflicts ─────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
     ## ✖ dplyr::filter() masks stats::filter()
     ## ✖ dplyr::lag()    masks stats::lag()
-
-``` r
-library(broom)
-library(splitstackshape)
-library(rpart)
-library(rpart.plot)
-library(RColorBrewer)
-library(rlist)
-library(randomForest)
-```
 
     ## randomForest 4.6-14
 
@@ -47,24 +31,12 @@ library(randomForest)
     ## 
     ##     margin
 
-``` r
-library(miscTools)
-library(ggplot2)
-library(ggmap)
-library(maps)
-```
-
     ## 
     ## Attaching package: 'maps'
 
     ## The following object is masked from 'package:purrr':
     ## 
     ##     map
-
-``` r
-library(mapdata)
-library(gridExtra)
-```
 
     ## 
     ## Attaching package: 'gridExtra'
@@ -76,12 +48,6 @@ library(gridExtra)
     ## The following object is masked from 'package:dplyr':
     ## 
     ##     combine
-
-``` r
-set.seed(415)
-# run load-data.R first
-food <- read_csv("data/food.csv")
-```
 
     ## Parsed with column specification:
     ## cols(
@@ -100,10 +66,6 @@ food <- read_csv("data/food.csv")
     ##   categories = col_character()
     ## )
 
-``` r
-food_attr <- read_csv("data/food-attributes.csv") 
-```
-
     ## Parsed with column specification:
     ## cols(
     ##   .default = col_logical(),
@@ -120,10 +82,6 @@ food_attr <- read_csv("data/food-attributes.csv")
 
     ## See spec(...) for full column specifications.
 
-``` r
-food_hours <- read_csv("data/food-hours.csv")
-```
-
     ## Parsed with column specification:
     ## cols(
     ##   business_id = col_character(),
@@ -135,19 +93,6 @@ food_hours <- read_csv("data/food-hours.csv")
     ##   hours.Saturday = col_character(),
     ##   hours.Sunday = col_character()
     ## )
-
-``` r
-food_attr <- food_attr %>% 
-  select(-starts_with("DietaryRestrictions"))
-
-food_attr_col <- colnames(food_attr) %>% 
-  as.data.frame() %>%
-  mutate(cols = str_replace(., "-", "_")) %>% 
-  select(-.) %>% 
-  pull()
-
-colnames(food_attr) <- food_attr_col
-```
 
 For our final project, we worked with a Yelp dataset. Yelp is a web and
 mobile platform that publishes crowd-sourced reviews about local
@@ -180,24 +125,7 @@ including hours.Monday, hours.Tuesday, etc.
 Before building our linear model, we created rudimentary visualizations
 to get a sense of the overall trend of the data.
 
-``` r
-food_stars <- food %>%
-  count(stars) %>% 
-  arrange(desc(stars)) 
-
-ggplot(data = food_stars,aes(x = stars,y= n)) +
-  geom_bar(stat = "identity",fill = "steelblue")+
-  labs(title = "Count of of star ratings",y = "count")+
-  geom_text(aes(label = n),position = "stack",vjust = 0) +
-  scale_x_continuous(breaks = c(1,1.5,2,2.5,3,3.5,4,4.5,5))
-```
-
 ![](project_files/figure-gfm/initial_visualizations-1.png)<!-- -->
-
-``` r
-food %>%
-  summarise(mean = mean(stars),median = median(stars))
-```
 
     ## # A tibble: 1 x 2
     ##    mean median
@@ -222,39 +150,12 @@ metropolitan areas within this dataset but we were seeing many more
 cities than 11. Therefore we just wanted to create a visualization to
 see all restaurant locations.
 
-``` r
-usa <- map_data("usa")
-world_map <- map_data("world")
-p <- ggplot() + coord_fixed() +
-  xlab("") + ylab("")
-
-#Add map to base plot
-base_world_messy <- p + geom_polygon(data=world_map, aes(x=long, y=lat, group=group), 
-                               colour="black", fill="black")
-cleanup <- 
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-        panel.background = element_rect(fill = 'white', colour = 'white'), 
-        axis.line = element_line(colour = "white"), legend.position="none",
-        axis.ticks=element_blank(), axis.text.x=element_blank(),
-        axis.text.y=element_blank())
-
-base_world <- base_world_messy + cleanup
-
-food %>% 
-  filter(longitude > 100)
-```
-
     ## # A tibble: 1 x 13
     ##   business_id  name  neighborhood address city  state postal_code latitude
     ##   <chr>        <chr> <chr>        <chr>   <chr> <chr> <chr>          <dbl>
     ## 1 Zmp2_b2gpSl… Terr… <NA>         Green … Hend… NV    89052           36.0
     ## # ... with 5 more variables: longitude <dbl>, stars <dbl>,
     ## #   review_count <int>, is_open <int>, categories <chr>
-
-``` r
-food %>% 
-  filter(longitude < -130) 
-```
 
     ## # A tibble: 1 x 13
     ##   business_id  name  neighborhood address city  state postal_code latitude
@@ -263,112 +164,15 @@ food %>%
     ## # ... with 5 more variables: longitude <dbl>, stars <dbl>,
     ## #   review_count <int>, is_open <int>, categories <chr>
 
-``` r
-food <- food %>% 
-  filter(longitude < 100 & longitude >-130) 
-  #%>% 
-  #filter(business_id != "vBxK_MAGuy8eWL_CCfUCUQ") %>% 
-  #filter(latitude > -20 | latitude < -45)
-
-map_data <- 
-  base_world +
-  geom_point(data=food, 
-             aes(x=longitude, y=latitude), colour="red", 
-             fill="Pink",pch=21, size=5, alpha=I(0.5))
-map_data
-```
-
 ![](project_files/figure-gfm/map-1.png)<!-- -->
 
 The map graph showed that there are indeed many more cities included in
-the dataset but the majority of cities are in North American and Europe.
-
-``` r
-### this block counts up non-null values 
-
-# create new var to represent if at least one of the subvalues is true
-food_attr_temp <- food_attr %>% 
-  select(-business_id) %>% 
-  mutate(BusinessParking =  BusinessParking.garage    == TRUE   |       
-                            BusinessParking.street    == TRUE |             
-                            BusinessParking.validated   == TRUE |    
-                            BusinessParking.lot       == TRUE | 
-                            BusinessParking.valet     == TRUE,
-         Music =  Music.dj                == TRUE |             
-                  Music.background_music    == TRUE |           
-                  Music.no_music              == TRUE |     
-                  Music.karaoke           == TRUE |         
-                  Music.live              == TRUE | 
-                  Music.video             == TRUE |         
-                  Music.jukebox           == TRUE , 
-         Ambience = Ambience.romantic   == TRUE |           
-                    Ambience.intimate   == TRUE |           
-                    Ambience.classy     == TRUE |       
-                    Ambience.hipster    == TRUE |           
-                    Ambience.divey      == TRUE |       
-                    Ambience.touristy   == TRUE |           
-                    Ambience.trendy     == TRUE |       
-                    Ambience.upscale  == TRUE |
-                    Ambience.casual     == TRUE,    
-         BestNights = BestNights.monday     == TRUE |   
-                      BestNights.tuesday        == TRUE |           
-                      BestNights.friday         == TRUE |       
-                      BestNights.wednesday  == TRUE |               
-                      BestNights.thursday       == TRUE |           
-                      BestNights.sunday         == TRUE |       
-                      BestNights.saturday       == TRUE,    
-         GoodForMeal =  GoodForMeal.dessert   == TRUE |     
-                        GoodForMeal.latenight   == TRUE |
-                        GoodForMeal.lunch         == TRUE |         
-                        GoodForMeal.dinner      == TRUE |           
-                        GoodForMeal.breakfast   == TRUE |       
-                        GoodForMeal.brunch      == TRUE)    
-
-# recode null and non null with 0/1
-food_attr_temp[is.na(food_attr_temp)] <- 0
-food_attr_temp[food_attr_temp != 0] <- 1
-
-# sum up to get non null values
-food_attr_counts <- food_attr_temp %>% 
-  summarise_all(funs(sum(. == 1))) %>% 
-  gather(attribute, total, 1:ncol(.)) %>% 
-  arrange(desc(total))
-
-# for categories broken into multiple columns, get frequency of occurences
-level_props <- data.frame(attribute = colnames(food_attr)) %>% 
-  filter(str_detect(attribute, "\\.")) %>% 
-  inner_join(food_attr_counts, by = "attribute") %>% 
-  mutate(attribute_parent = str_remove(attribute, "\\..+"),
-         attribute = str_remove(attribute, ".+\\.")) %>%
-  rename(subtotal = total) %>% 
-  inner_join(food_attr_counts, by = c("attribute_parent" = "attribute")) %>% 
-  mutate(prop = subtotal / total) %>% 
-  mutate(subtotal = case_when(attribute == "hipster" ~ as.double(858),
-                              attribute != "hipster" ~ as.double(subtotal))) %>% 
-  arrange(attribute_parent, desc(prop)) 
-```
+the dataset but the majority of cities are in North American and
+    Europe.
 
     ## Warning: Column `attribute` joining factor and character vector, coercing
     ## into character vector
-
-``` r
-# manually break tie
-level_props[4,2] <- 858
-level_props[4,5] <- 0.03737
-
-# for these multi-column attributes, this tells us how many columns are usually true in any row
-data.frame(attribute = colnames(food_attr)) %>% 
-  filter(str_detect(attribute, "\\.")) %>% 
-  inner_join(food_attr_counts, by = "attribute") %>% 
-  mutate(attribute_parent = str_remove(attribute, "\\..+")) %>%
-  rename(subtotal = total) %>% 
-  inner_join(food_attr_counts, by = c("attribute_parent" = "attribute")) %>% 
-  mutate(prop = subtotal / total) %>% 
-  arrange(attribute_parent, desc(prop)) %>% 
-  group_by(attribute_parent) %>% 
-  summarise(undisjoint_factor = sum(subtotal) / median(total))
-```
-
+    
     ## Warning: Column `attribute` joining factor and character vector, coercing
     ## into character vector
 
@@ -384,183 +188,7 @@ data.frame(attribute = colnames(food_attr)) %>%
 To make our analysis more efficient we had cut down and reformat our
 code. The issues we had to solve for were the following: aggregate
 related columns by some protocol and find the subset of columns that
-maximize non-null rows and number of
-attributes.
-
-``` r
-### this code block merges the multi column attribues into single columns
-### and if there are multiple values follows a protocol (min, max, or prob) 
-### to determine which value should represent the row
-### e.g. the merged BestNights column might have `wednesday,friday,sunday`,
-### and if `wednesday` appears least in the dataset, the min protocol 
-### would reduce this to `wednesday`
-
-# get the names of the multi-column attributes
-lst <- food_attr %>% 
-  select(contains(".")) %>% 
-  colnames() 
-
-# this function changes the formatting of the multicolumn attributes 
-# true values take on the name of the column, false values are periods
-convert_dot <- function(col_name) {
-  col_name_short <- str_remove(col_name, ".+\\.")
-  index <- grep(col_name, colnames(food_attr))
-  col <- food_attr[index]
-  col[col == TRUE] <- paste0(col_name_short, ",")
-  col[col == FALSE] <- "."
-  return(col)
-}
-
-lst <- food_attr %>% 
-  select(contains(".")) %>% 
-  colnames() 
-
-
-food_attr_convert <- purrr::map(lst, convert_dot) %>% 
-  as.data.frame()
-
-# aggregate the columnn by pasting together the variable values;
-# since true values are the name of the column, this column tells us the names
-# of the sub attributes that are true... formatting at the end
-food_attr_convert <- food_attr_convert %>% 
-  mutate(aggBusinessParking =  paste0(BusinessParking.garage,       
-                                      BusinessParking.street,           
-                                      BusinessParking.validated,     
-                                      BusinessParking.lot,
-                                      BusinessParking.valet, sep=""),
-         aggMusic = paste0(Music.dj,                
-                           Music.background_music,      
-                           Music.no_music,
-                           Music.karaoke    ,
-                           Music.live,
-                           Music.video,         
-                           Music.jukebox, sep=""),
-         aggAmbience = paste0(Ambience.romantic,
-                              Ambience.intimate,        
-                              Ambience.classy   ,   
-                              Ambience.hipster,     
-                              Ambience.divey    ,   
-                              Ambience.touristy,        
-                              Ambience.trendy   ,   
-                              Ambience.upscale,
-                              Ambience.casual, sep=""),
-         aggBestNights = paste0(BestNights.monday    ,  
-                                BestNights.tuesday      ,   
-                                BestNights.friday           ,
-                                BestNights.wednesday    ,       
-                                BestNights.thursday     ,   
-                                BestNights.sunday           ,
-                                BestNights.saturday, sep=""),
-         aggGoodForMeal = paste0(GoodForMeal.dessert,       
-                                 GoodForMeal.latenight,
-                                 GoodForMeal.lunch        , 
-                                 GoodForMeal.dinner     ,   
-                                 GoodForMeal.breakfast  ,
-                                 GoodForMeal.brunch, sep="")) %>% 
-  select(-contains(".")) %>% 
-  mutate_all(funs(str_replace_all(.,",+", ","))) %>% 
-  mutate_all(funs(str_replace_all(., "[NA]+", "NA"))) %>% 
-  mutate_all(funs(str_remove_all(., "\\.NA|NA\\."))) %>% 
-  mutate_all(funs(str_replace_all(., "^\\.+$", "None"))) %>% 
-  mutate_all(funs(str_remove_all(., "\\.+"))) %>% 
-  mutate_all(funs(str_remove(.,"^,"))) %>% 
-  mutate_all(funs(str_remove(.,",$")))
-
-# turn "NA" into NA
-food_attr_convert[food_attr_convert == "NA"] <- NA
-
-### PROBLEM: too many collisions between variables - need to reduce to one value; don't want to eliminate too much information
-### SOLUTION1: choose in order of frequency, low to high
-### IMPLEMENTATION: iterate through, call function: if (numberofcommas + 1) > 1: split into vector, for each element in vector
-### PROBLEM: if all slightly equal numbers but still collisions, some vals might not get seen
-
-# min protocol: picks the least frequent value
-pick_index_min <- function(freq_vect) {
-  return(grep(min(freq_vect), freq_vect))
-}
-
-# max protocol: picks the most frequent value
-pick_index_max <- function(freq_vect) {
-  return(grep(max(freq_vect), freq_vect))
-}
-
-# prob protocol: picks the value probabilistically according to frequency so that
-# same combinations of values aren't always the same
-pick_index_prob <- function(freq_vect) {
-  ord_vect <- sort(freq_vect)
-  total <- reduce(freq_vect, sum)
-  ord_vect_prob <- sapply(ord_vect, function(x) x/total)
-  rev_vect_prob <- sort(ord_vect_prob, decreasing = TRUE)
-  for (i in 2:length(rev_vect_prob)){
-    rev_vect_prob[[i]] <- rev_vect_prob[[i]] + rev_vect_prob[[i-1]]
-  }
-  rand <- runif(1)
-  ind <- which(sapply(rev_vect_prob, function (x) x > rand))[[1]]
-  return(grep(ord_vect[[ind]],freq_vect))
-}
-
-# this function reduces a row of multiple values to a single value
-# according to some protocol, in this case min
-my_reduce <- function(col) {
-
-  for (i in 1:length(col)) {
-    val_list <- col[[i]]
-    if (is.na(val_list) | val_list == "None" | !str_detect(val_list, ",")) {
-      col[[i]] <- val_list
-    } else {
-      vals <- unlist(str_split(val_list, ","))
-      freq_vect <- c()
-      for (val in vals) {
-        freq <- level_props %>%
-          filter(attribute == val) %>%
-          select(subtotal) %>%
-          pull()
-        freq_vect <- c(freq_vect, freq)
-      }
-      index <- pick_index_min(freq_vect)
-      col[[i]] <- vals[index]
-    }
-  }
-  return(col)
-}
-
-# apply the function
-food_attr_reduce <- food_attr_convert %>% 
-  mutate_all(funs(my_reduce))
-```
-
-``` r
-convert <- function(col_name, tbl) {
-  index <- grep(col_name, colnames(tbl))
-  col <- tbl[index]
-  col[!is.na(col)] <- paste0(col_name, ",")
-  col[is.na(col)] <- ""
-  return(col)
-}
-
-column_list <- food_attr_temp %>% 
-  select(1:65) %>% 
-  select(-contains(".")) %>% 
-  summarise_all(funs(sum(. == 1))) %>% 
-  gather(attribute, total, 1:ncol(.)) %>% 
-  arrange(desc(total)) %>% 
-  filter(total > 10000) %>% 
-  pull(attribute)
-
-test_df <- food_attr[c(column_list)] %>% 
-  cbind(food_attr_reduce)
-
-test_columns <- purrr::map(colnames(test_df), function(x) convert(x,food_attr)) %>% 
-  as.data.frame() %>% 
-  unite(attr,sep = "", remove = TRUE) %>% 
-  count(attr) %>% 
-  mutate(num_attr = str_count(attr, ","),
-          opt_score = num_attr*n) %>% 
-  filter(opt_score > 0) %>% 
-  arrange(desc(num_attr * n)) %>% 
-  pull(attr) %>% 
-  sapply(function(x) unlist(strsplit(x, split=",")))
-```
+maximize non-null rows and number of attributes.
 
 For the first problem, there were 6 columns that were initially broken
 up across around 30 columns. For example, the column GoodForMeal was
@@ -569,54 +197,8 @@ since a restaurant could be good for multiple meals. We needed to
 aggregate these values into a single column, but we had to figure out
 how to handle collisions when two or more columns were true. We created
 a function to reduce these aggregated columns, replacing their list of
-values with the value that occurs most in the dataset.
-
-``` r
-cols_eval <- function(col_names, tbl) {
-  food_attr_local <- tbl[col_names]
-  output <- food_attr_local %>% 
-    drop_na() %>% 
-    summarise(n = nrow(.),
-              attr = paste0(col_names, collapse = ",")) %>% 
-    mutate(num_attr = length(col_names),
-           opt_score = n*num_attr)
-  
-  return(output)
-}
-
-powerset <- function(vect) {
-  total <- character()
-  range <- c(((6 * length(vect)) %/% 10):length(vect))
-  print(range)
-  for (m in range) {
-    x <- combn(vect, m, simplify = FALSE)
-    total <- append(total,x)
-  }
-  return(total)
-}
-
-find_best_cols <- function(tbl) {
-  #pwrset <- powerset(colnames(tbl))
-  result <- map_df(test_columns, function(x) cols_eval(x,tbl)) %>%               
-    arrange(desc(opt_score)) %>% 
-    select(attr, opt_score, n, num_attr)
-  return(result)
-}
-
-all_cols <- find_best_cols(test_df[1:22])
-all_cols %>%
-  ggplot(aes(x = num_attr, y = n, z = opt_score, color = (n*num_attr))) +
-  geom_point(size = 4, alpha = 1) +
-  stat_function(fun = function(x) 412555/(.5*x), color = "red") +
-  stat_function(fun = function(x) 412555/x, color = "red") +
-  stat_function(fun = function(x) 412555/(2*x), color = "red") +
-  stat_function(fun = function(x) 412555/(4*x), color = "red") +
-  stat_function(fun = function(x) 412555/(8*x), color = "red") +
-  scale_color_distiller(palette = "Blues", direction = 1) +
-  theme_minimal() +
-  ylim(0,75000) +
-  labs(color = "Optimization Function", y = "Number of Rows", x = "Number of Attributes", title = "Finding best combination of columns", subtitle = "Optimizing for number of rows and number of attributes")
-```
+values with the value that occurs most in the
+    dataset.
 
     ## Warning: Removed 63 rows containing missing values (geom_path).
 
@@ -627,12 +209,6 @@ all_cols %>%
     ## Warning: Removed 3 rows containing missing values (geom_path).
 
 ![](project_files/figure-gfm/find-optimal-column-1.png)<!-- -->
-
-``` r
-(candidate_columns <- all_cols %>%
-  top_n(3, opt_score) %>%
-  pull(attr))
-```
 
     ## [1] "RestaurantsPriceRange2,BusinessAcceptsCreditCards,RestaurantsTakeOut,RestaurantsAttire,Alcohol,RestaurantsGoodForGroups,GoodForKids,NoiseLevel,RestaurantsTableService,HasTV,OutdoorSeating,RestaurantsReservations,RestaurantsDelivery"                 
     ## [2] "RestaurantsPriceRange2,BusinessAcceptsCreditCards,RestaurantsTakeOut,RestaurantsAttire,Alcohol,WiFi,RestaurantsGoodForGroups,GoodForKids,NoiseLevel,RestaurantsTableService,HasTV,OutdoorSeating,RestaurantsReservations,RestaurantsDelivery"            
@@ -651,77 +227,6 @@ down our search space from 2^22 to around 5000. A significant
 improvement. From there we calculated the subset of the dataset that
 would maximize our data.
 
-``` r
-# use the significant columns found to trim down dataset
-# this puts together the significant columns we found with our new merged columns, drop NA's
-food_attr_mod_2 <- food_attr %>% 
-  cbind(food_attr_reduce) %>% 
-  select(business_id, BusinessAcceptsCreditCards,RestaurantsPriceRange2,GoodForKids,BikeParking,Alcohol,HasTV,NoiseLevel,RestaurantsAttire,RestaurantsGoodForGroups,Caters,WiFi,RestaurantsReservations,RestaurantsTakeOut, aggBusinessParking, aggAmbience, aggGoodForMeal) %>% 
-  drop_na()
-
-food_tall <- food %>% 
-  cSplit("categories", direction = "tall", sep = ",") 
-
-category_counts <- food_tall %>% 
-  count(categories) %>% 
-  arrange(desc(n))
-
-# this function reduces a row of multiple values to a single value
-# according to some protocol, in this case max
-my_reduce_2 <- function(col) {
-
-  for (i in 1:length(col)) {
-    val_list <- col[[i]]
-    if (is.na(val_list) | val_list == "None" | !str_detect(val_list, ",")) {
-      col[[i]] <- val_list
-    } else {
-      vals <- unlist(str_split(val_list, ","))
-      freq_vect <- c()
-      for (val in vals) {
-        freq <- category_counts %>%
-          filter(categories == val) %>%
-          select(n) %>%
-          pull()
-        freq_vect <- c(freq_vect, freq)
-      }
-      index <- pick_index_max(freq_vect)
-      col[[i]] <- vals[index]
-    }
-  }
-  return(col)
-}
-
-# reduce the categories variable
-food$categories <- my_reduce_2(food$categories)
-
-# pull the top 50 categories
-large_categories_list <- food %>% 
-  count(categories) %>% 
-  arrange(desc(n)) %>% 
-  head(50) %>% 
-  pull(categories)
-
-# filter by the top 50 categories
-food_reduce <- food %>% 
-  filter(categories %in% large_categories_list)
-
-# merge the business info dataset with the business attributes 
-food_reduce <- food_reduce %>% 
-  inner_join(food_attr_mod_2, by = "business_id")
-
-# turn character columns into factors
-cols = c("Alcohol", "NoiseLevel", "RestaurantsAttire", "WiFi", "aggBusinessParking", "aggAmbience", "aggGoodForMeal", "categories")
-food_reduce[cols] <- lapply(food_reduce[cols], factor)
-
-# create training set
-train_full <- food_reduce %>% 
-  head(9*nrow(food_reduce)/10)
-
-# create test set
-test_full <- food_reduce %>% 
-  tail(1*nrow(food_reduce)/10)
-```
-
 With this full dataset, we performed a linear regression using the
 following characteristics to predict star score: food within price range
 of 11-30(dollars), good for kids, acceptance of credit cards, bike
@@ -729,18 +234,7 @@ parking, alcohol sold, TV present, noise level, dress code, fit for
 groups, catering ability, WiFi present, accepts reservations, takeout
 offered, parking available, ambience, and best mealtime.
 
-``` r
-#run linear analysis 
-lm_food <- lm(stars ~ RestaurantsPriceRange2 + categories + BusinessAcceptsCreditCards + Alcohol +  HasTV + NoiseLevel +  RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal + review_count + BikeParking + GoodForKids + RestaurantsReservations + RestaurantsTakeOut + RestaurantsAttire + RestaurantsGoodForGroups,data = food_reduce)
-
-summary(lm_food)$r.squared
-```
-
     ## [1] 0.2330068
-
-``` r
-lm_food
-```
 
     ## 
     ## Call:
@@ -869,14 +363,7 @@ value assigned to the attribute. The adjusted R-squared value for this
 linear model is 0.1584309, meaning that this model accounts for
 approximately 15.8% of the variability in the stars values. This low
 score indicates that the linear regression model insufficiently
-describes the data and has low predictive
-power.
-
-``` r
-fit <- rpart(stars ~ categories+BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal, method = "anova", data = food_reduce)
-
-printcp(fit) # display the results 
-```
+describes the data and has low predictive power.
 
     ## 
     ## Regression tree:
@@ -901,11 +388,6 @@ printcp(fit) # display the results
     ## 4 0.016035      3   0.88541 0.88927 0.0086588
     ## 5 0.013138      4   0.86938 0.87515 0.0085808
     ## 6 0.010000      5   0.85624 0.86406 0.0084920
-
-``` r
-par(mfrow=c(1,2)) # two plots on one page 
-rsq.rpart(fit) # visualize cross-validation results  
-```
 
     ## 
     ## Regression tree:
@@ -933,10 +415,6 @@ rsq.rpart(fit) # visualize cross-validation results
 
 ![](project_files/figure-gfm/rpart%20regression%20tree-1.png)<!-- -->
 
-``` r
-prune(fit, cp = 0.02)
-```
-
     ## n= 22410 
     ## 
     ## node), split, n, deviance, yval
@@ -949,12 +427,6 @@ prune(fit, cp = 0.02)
     ##   3) categories=american (new),american (traditional),asian fusion,bakeries,barbeque,breakfast & brunch,cafes,canadian (new),caribbean,chicken wings,chinese,coffee & tea,delis,desserts,diners,event planning & services,food,french,german,greek,grocery,ice cream & frozen yogurt,indian,italian,japanese,juice bars & smoothies,korean,mediterranean,mexican,middle eastern,nightlife,pizza,salad,sandwiches,seafood,shopping,specialty food,steakhouses,sushi bars,thai,vietnamese,wine & spirits 20857  8207.8700 3.585894  
     ##     6) categories=american (traditional),asian fusion,barbeque,chicken wings,chinese,delis,greek,korean,mexican,nightlife,pizza,steakhouses 12214  4760.2580 3.493655 *
     ##     7) categories=american (new),bakeries,breakfast & brunch,cafes,canadian (new),caribbean,coffee & tea,desserts,diners,event planning & services,food,french,german,grocery,ice cream & frozen yogurt,indian,italian,japanese,juice bars & smoothies,mediterranean,middle eastern,salad,sandwiches,seafood,shopping,specialty food,sushi bars,thai,vietnamese,wine & spirits 8643  3196.8390 3.716244 *
-
-``` r
-plot(fit, uniform=TRUE, 
-    main="Regression Tree for Mileage ")
-text(fit, use.n=TRUE, all=TRUE)
-```
 
 ![](project_files/figure-gfm/rpart%20regression%20tree-2.png)<!-- -->
 
@@ -973,68 +445,17 @@ Next, we plotted two graph p1 and p2. P1 showed the predicted stars
 vs. acutal stars and we colored that data point by restaurant
 categories. P2 demonstrated the residuals vs. predicted stars. The
 center of the residual plot is approximately in the middle with data
-points radiating in a circular shape.
+points radiating in a circular
+shape.
 
-``` r
-predicted_stars <- fitted(lm_food)
-stars_original <- food_reduce$stars
-
-p1 <-ggplot(lm_food,mapping =aes(stars_original,.fitted, color = factor(categories))) +
-  geom_jitter(alpha = 0.5, width = 0.5, height = 0.5 )+
-  labs(x = "Actual stars", y = "Predicted Stars",title = "Predicted vs Actual Stars") +
-  theme_minimal() +
-  theme(legend.position="none",plot.title = element_text(hjust = 0.5))
-p1
-```
-
-![](project_files/figure-gfm/predicted_residual-1.png)<!-- -->
-
-``` r
-residual <- resid(lm_food)
-residual_jitter = jitter(residual,amount = .01)
-p2 <- ggplot(lm_food,mapping = aes(.fitted,residual_jitter, color = factor(categories))) +
-  geom_jitter(alpha = 0.5, width = 0.5, height = 0.5 )+
-  labs(x = "Predicted stars", y = "Residuals",title = "Residual Plot of Stars")+
-  theme_minimal() +
-  theme(legend.position="none",plot.title = element_text(hjust = 0.5))+
-  geom_hline(yintercept=0, linetype="dashed", color = "red")
-p2
-```
-
-![](project_files/figure-gfm/predicted_residual-2.png)<!-- -->
-
-``` r
-# run random forest
-fit_full <- randomForest(stars ~  RestaurantsPriceRange2 + categories + BusinessAcceptsCreditCards + Alcohol +  HasTV + NoiseLevel +  RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal + review_count + BikeParking + GoodForKids + RestaurantsReservations + RestaurantsTakeOut + RestaurantsAttire + RestaurantsGoodForGroups, 
-                    data=train_full, 
-                    importance=TRUE,  
-                    ntree=50)
-
-# inspect which elements are important
-varImpPlot(fit_full)
-```
+![](project_files/figure-gfm/predicted_residual-1.png)<!-- -->![](project_files/figure-gfm/predicted_residual-2.png)<!-- -->
 
 ![](project_files/figure-gfm/random_forest-1.png)<!-- -->
-
-``` r
-# get r^2
-(r2 <- rSquared(test_full$stars, test_full$stars - predict(fit_full, test_full)))
-```
 
     ##           [,1]
     ## [1,] 0.2872312
 
-``` r
-# plot learning curve
-plot(fit_full)
-```
-
 ![](project_files/figure-gfm/random_forest-2.png)<!-- -->
-
-``` r
-# get info on model
-fit_full
-```
 
     ## 
     ## Call:
@@ -1045,25 +466,6 @@ fit_full
     ## 
     ##           Mean of squared residuals: 0.3325849
     ##                     % Var explained: 25.79
-
-``` r
-# predict values on test set
-predict_tbl <- predict(fit_full, test_full) %>% 
-  as.data.frame()
-
-# modify predict_tbl
-colnames(predict_tbl) <- c("predicted_score")
-for (i in 1:nrow(predict_tbl)){
-  predict_tbl[i,"index"] <-  i 
-}
-
-# find rows with highest predicted stars in test set
-predict_tbl %>% 
-  top_n(1, predicted_score) %>% 
-  pull() %>% 
-  test_full[.,] %>% 
-  select(-business_id, -address, -postal_code, -latitude, -longitude, -is_open)
-```
 
     ## # A tibble: 1 x 23
     ##   name        neighborhood     city   state stars review_count categories 
@@ -1090,74 +492,12 @@ confidence interval around our predictions. We are 95% confident that
 the actual star rating will be between ±1.14 stars of the predicted
 value.
 
-``` r
-# this function performs the above analysis for any subset of the dataset
-random_forest <- function(x){
-  food_reduce <- food_reduce %>% 
-    filter(categories == x)
-
-  cols = c("Alcohol", "NoiseLevel", "RestaurantsAttire", "WiFi", "aggBusinessParking", "aggAmbience", "aggGoodForMeal", "categories")
-  food_reduce[cols] <- lapply(food_reduce[cols], factor)
-  
-  train_full <- food_reduce %>% 
-    head(9*nrow(food_reduce)/10)
-  
-  test_full <- food_reduce %>% 
-    tail(1*nrow(food_reduce)/10)
-  
-  fit_full <- randomForest(stars ~  RestaurantsPriceRange2 + categories + BusinessAcceptsCreditCards + Alcohol +  HasTV + NoiseLevel +  RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal + review_count + BikeParking + GoodForKids + RestaurantsReservations + RestaurantsTakeOut + RestaurantsAttire + RestaurantsGoodForGroups , 
-                      data=train_full, 
-                      importance=TRUE,  
-                      ntree=200)
-  
-  r2 <- round(rSquared(test_full$stars, test_full$stars - predict(fit_full, test_full)),3) %>% 
-    as.data.frame()
-  
-  colnames(r2) <- "r.squared" 
-    
-  predict_tbl <- predict(fit_full, test_full) %>% 
-  data.frame()
-
-  colnames(predict_tbl) <- c("predicted_score")
-  for (i in 1:nrow(predict_tbl)){
-    predict_tbl[i,"index"] <-  i 
-  }
-
-  # find rows with highest predicted stars in test set
-  predict_tbl <- predict_tbl %>% 
-    top_n(3, predicted_score) 
-  
-  output <- predict_tbl %>% 
-    pull(index) %>% 
-    test_full[.,] %>% 
-    select(-business_id, -address, -postal_code, -latitude, -longitude, -is_open) 
-
-  # plot(fit_full, main = x)
-  
-  return(cbind(predict_tbl[1], r2, output))
-  #return(as.data.frame(r2))
-
-}
-
-#Apply the function random forest to each element of the vector large_categories_list
-categories_rows <-large_categories_list[1:20]
-
-r_squared <- purrr::map(categories_rows,random_forest)
-```
-
     ## Warning in randomForest.default(m, y, ...): The response has five or fewer
     ## unique values. Are you sure you want to do regression?
     
     ## Warning in randomForest.default(m, y, ...): The response has five or fewer
     ## unique values. Are you sure you want to do regression?
-
-``` r
-r_categories <-cbind(r_squared,categories_rows)
-r_categories_dt <- as.data.frame(r_categories, stringsAsFactors = FALSE)
-
-best_row <- purrr::map_df(categories_rows,random_forest)
-```
-
+    
     ## Warning in randomForest.default(m, y, ...): The response has five or fewer
     ## unique values. Are you sure you want to do regression?
     
@@ -1497,12 +837,6 @@ best_row <- purrr::map_df(categories_rows,random_forest)
     
     ## Warning in bind_rows_(x, .id): binding character and factor vector,
     ## coercing into character vector
-
-``` r
-best_row %>% 
-  arrange(desc(r.squared), desc(predicted_score)) %>% 
-  select(categories, everything())
-```
 
     ##                   categories predicted_score r.squared
     ## 1                  fast food        3.812142     0.367
