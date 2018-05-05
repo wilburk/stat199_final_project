@@ -23,6 +23,7 @@ library(ggplot2)
 library(ggmap)
 library(maps)
 library(mapdata)
+library(gridExtra)
 
 set.seed(415)
 # run load-data.R first
@@ -43,31 +44,35 @@ colnames(food_attr) <- food_attr_col
 
 ```
 
+For our final project, we worked with a Yelp dataset. Yelp is a web and mobile platform that publishes crowd-sourced reviews about local businesses, as well as online reservation service through Yelp reservations. The data we used was released by the Yelp Dataset Challenge to encourage students to conduct research and analysis. The scope of the dataset is extremely wide including business information, reviews and user data. Even the business subset contains information about 174,000 businesses and over 1.2 million business attributes, such as workday hours, parking, and ambience. Given this huge dataset, we decided to narrow down our interests and perform analysis specifically on the restaurant data. We were interested in exploring what attribute contribute to high restaurant star ratings on Yelp.  Eventually, we wanted to construct a regression model that predicts the star ratings of restaurants based on their attributes.
+ 
+We started by converting dataset from JSON form to CSV files. The R package jsonlite was used to stream in the json file and flatten it. The conversion happened in the load-data R script, in which we also cleaned up the data using functions from the stringr package. In addition, the data was split into multiple, csv subsets that can later be joined by the common variable, business_id. 
+1)    Food.csv (general business information): 69070 observations and 13 variables, including name, city, state, longitude, latitude, categories, etc.
+2)    Food_attributes.csv (business attributes information): 69070 observations and 66 variables, including GoodForKids, RestaurantsAttire, WiFi, etc.
+3)    Food_hours.csv (business hour information): 69070 observations and 8 variables, including hours.Monday, hours.Tuesday, etc.
+
+Before building our linear model, we created rudimentary visualizations to get a sense of the overall trend of the data. 
+
 ```{r initial_visualizations}
 
 food_stars <- food %>%
   count(stars) %>% 
-  arrange(desc(stars))
-food_stars
+  arrange(desc(stars)) 
 
-ggplot(food_stars,aes(stars,n)) +
-  geom_col()+
-  labs(title = "Distribuction of star ratings")
-
-food %>%
-  count(state) %>% 
-  arrange(desc(n))
+ggplot(data = food_stars,aes(x = stars,y= n)) +
+  geom_bar(stat = "identity",fill = "steelblue")+
+  labs(title = "Count of of star ratings",y = "count")+
+  geom_text(aes(label = n),position = "stack",vjust = 0) +
+  scale_x_continuous(breaks = c(1,1.5,2,2.5,3,3.5,4,4.5,5))
 
 food %>%
   summarise(mean = mean(stars),median = median(stars))
 
-food %>% 
-  cSplit("categories", direction = "tall", sep = ",") %>% 
-  count(categories) %>% 
-  arrange(desc(n))
-
-
 ```
+
+The first bar graph showed the counts of each star rating categories. It’s important to note that star ratings on Yelp are not continuous, but discrete, and the ratings change by increments of 0.5. Therefore, we could not approximate the ratings with a normal distribution. However, we did know from summary statistics that both mean and median star ratings are approximately 3.5. Additionally, we should consider the possible anchoring effect that one review could have on another. Reviews are not random like throwing dice and adding up the sum. Both the nature of review ratings and the discrete system implemented by Yelp should be considered when evaluating the validity and predictability of our multiple regression linear model. 
+  
+We also did a simple map to visualize the locations of the restaurants. This is because the Yelp website specified that there are 11 metropolitan areas within this dataset but we were seeing many more cities than 11. Therefore we just wanted to create a visualization to see all restaurant locations. 
 
 ```{r map}
 usa <- map_data("usa")
@@ -87,10 +92,17 @@ cleanup <-
 
 base_world <- base_world_messy + cleanup
 
+food %>% 
+  filter(longitude > 100)
+
+food %>% 
+  filter(longitude < -130) 
+
 food <- food %>% 
-  filter(longitude < 100 & longitude >-130) %>% 
-  filter(business_id != "vBxK_MAGuy8eWL_CCfUCUQ") %>% 
-  filter(latitude > -20 | latitude < -45)
+  filter(longitude < 100 & longitude >-130) 
+  #%>% 
+  #filter(business_id != "vBxK_MAGuy8eWL_CCfUCUQ") %>% 
+  #filter(latitude > -20 | latitude < -45)
 
 map_data <- 
   base_world +
@@ -101,6 +113,8 @@ map_data
 
 
 ```
+The map graph showed that there are indeed many more cities included in the dataset but the majority of cities are in North American and Europe. 
+
 
 
 ```{r recode_variables, message=FALSE}
@@ -212,7 +226,11 @@ convert_dot <- function(col_name) {
   return(col)
 }
 
-# run the function 
+lst <- food_attr %>% 
+  select(contains(".")) %>% 
+  colnames() 
+
+
 food_attr_convert <- purrr::map(lst, convert_dot) %>% 
   as.data.frame()
 
@@ -357,7 +375,6 @@ test_columns <- purrr::map(colnames(test_df), function(x) convert(x,food_attr)) 
 ```
 
 
-
 ```{r find-optimal-column}
 cols_eval <- function(col_names, tbl) {
   food_attr_local <- tbl[col_names]
@@ -476,14 +493,46 @@ test_full <- food_reduce %>%
 
 ```
 
-```{r linear regression}
+With this full dataset, we performed a linear regression using the following characteristics to predict star score: food within price range of 11-30(dollars), good for kids, acceptance of credit cards, bike parking, alcohol sold, TV present, noise level, dress code, fit for groups, catering ability, WiFi present, accepts reservations, takeout offered, parking available, ambience, and best mealtime. 
 
+```{r linear regression}
 #run linear analysis 
 lm_food <- lm(stars ~ RestaurantsPriceRange2 + categories + BusinessAcceptsCreditCards + Alcohol +  HasTV + NoiseLevel +  RestaurantsGoodForGroups + Caters + WiFi + aggBusinessParking + aggAmbience + aggGoodForMeal + review_count + BikeParking + GoodForKids + RestaurantsReservations + RestaurantsTakeOut + RestaurantsAttire + RestaurantsGoodForGroups,data = food_reduce)
 
 AIC(lm_food)
 summary(lm_food)$adj.r.squared
+
+lm_food
 ```
+
+Predicted stars = 3.86 – 0.03(BusinessAcceptsCreditCards) + 0.02(RestaurantsPriceRange2) – 0.09(GoodForKids) + 0.08(BikeParking) – 0.17(Alcoholfull_bar) – 0.06(Alcoholnone) + 0.04(HasTVTRUE) – 0.18(NoiseLevelloud) + 0.14(NoiseLevelquiet) – 0.43(NoiseLevelvery_loud) + 0.10(RestaurantsAttiredressy) + 0.21(RestaurantsAttireformal) – 0.10(RestaurantsGoodForGroupsTRUE) + 0.17(CatersTrue) – 0.02(WiFino) – 0.12(WiFipaid) + 0.02(RestaurantsReservationsTRUE) – 0.15(RestaurantsTakeOutTRUE) + 0.01(aggBusinessParkinglot) – 0.13(aggBusinessParkingNone) + 0.14(aggBusinessParkingstreet) – 0.13(aggBusinessParkingNone) + 0.14(aggBusinessParkingstreet) + 0.01(aggBusinessParkingValet) + 0.07(aggBusinessParkingvalidated) + 0.14(aggAmbienceclassy) + 0.11(aggAmbiencedivey) + 0.31(aggAmbiencehipster) + 0.24(aggAmbienceintimate) – 0.12(aggAmbienceNone) + 0.16(aggAmbienceromantic) – 0.20(aggAmbiencetouristy) + 0.21(aggAmbiencetrendy) + 0.18(aggAmbienceupscale) + 0.23(aggGoodForMealbrunch) + 0.11(aggGoodForMealdessert) + 0.20(aggGoodForMealdinner) + 0.02(aggGoodForMeallatenight) + 0.13(aggGoodForMeallunch) + 0.04(aggGoodForMealNone)
+
+This linear model suggests that in an alternate reality, if a restaurant demonstrated none of the above characteristics, the star rating would be 3.86. For each attribute a restaurant has, its rating increases or decreases according to each attribute’s coefficient multiplied by the value assigned to the attribute. The adjusted R-squared value for this linear model is 0.1584309, meaning that this model accounts for approximately 15.8% of the variability in the stars values. This low score indicates that the linear regression model insufficiently describes the data and has low predictive power.  
+  
+Next, we plotted two graph p1 and p2. P1 showed the predicted stars vs. acutal stars and we colored that data point by restaurant categories. P2 demonstrated the residuals vs. predicted stars. The center of the residual plot is approximately in the middle with data points radiating in a circular shape. 
+
+```{r predicted_residual}
+predicted_stars <- fitted(lm_food)
+stars_original <- food_reduce$stars
+
+p1 <-ggplot(lm_food,mapping =aes(stars_original,.fitted, color = factor(categories))) +
+  geom_jitter(alpha = 0.5, width = 0.5, height = 0.5 )+
+  labs(x = "Actual stars", y = "Predicted Stars",title = "Predicted vs Actual stars") +
+  theme_minimal() +
+  theme(legend.position="none")
+p1
+
+residual <- resid(lm_food)
+residual_jitter = jitter(residual,amount = .01)
+p2 <- ggplot(lm_food,mapping = aes(.fitted,residual_jitter, color = factor(categories))) +
+  geom_jitter(alpha = 0.5, width = 0.5, height = 0.5 )+
+  labs(x = "Predicted stars", y = "Residuals",title = "Residual plot of stars")+
+  theme_minimal() +
+  theme(legend.position="none")+
+  geom_hline(yintercept=0, linetype="dashed", color = "red")
+p2
+```
+
 
 ```{r random_forest}
 
@@ -523,7 +572,6 @@ predict_tbl %>%
   select(-business_id, -address, -postal_code, -latitude, -longitude, -is_open)
 
 ```
-
 
 ```{r random_forest_func}
 
@@ -575,15 +623,21 @@ random_forest <- function(x){
 
 }
 
-
 #Apply the function random forest to each element of the vector large_categories_list
 categories_rows <-large_categories_list[1:20]
+
+r_squared <- purrr::map(categories_rows,random_forest)
+
+
+r_categories <-cbind(r_squared,categories_rows)
+r_categories_dt <- as.data.frame(r_categories, stringsAsFactors = FALSE)
+
 best_row <- purrr::map_df(categories_rows,random_forest)
 best_row %>% 
   arrange(desc(r.squared), desc(predicted_score)) %>% 
   select(categories, everything())
-```
 
+```
 
 ```{r rpart regression tree}
 
@@ -606,33 +660,3 @@ text(fit, use.n=TRUE, all=TRUE)
 ```
 
 
-
-
-
-
-### EDA -- Katie
-```{r}
-library(mapdata)
-library(maps)
-library(klaR)
-```
-```{r}
-which(food$address == "Green Valley Ranch Resort, 2309 Paseo Verde Pkwy")
-food %>% 
-  filter(longitude > 110)
-```
-
-```{r}
-df <- na.omit(analysis)
-df <- df %>% 
-  mutate(RestaurantsPriceRange2 = case_when(
-    RestaurantsPriceRange2 == 2 ~ "2",
-    RestaurantsPriceRange2 == 1 ~ "1",
-    RestaurantsPriceRange2 == 3 ~ "3",
-    RestaurantsPriceRange2 == 4 ~ "4"
-  ))
-temp <- df[c(13,15)]
-test <- kmodes(temp, 3, iter.max = 10, weighted = FALSE)
-test
-```
-s

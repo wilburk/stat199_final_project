@@ -9,10 +9,18 @@ ui <- fluidPage(
   fluidRow(
     
     column(3, wellPanel(
-      selectInput("input_type", "Restaurant type",
-                  c("existing restaurant", "new restaurant"
-                  )
-      )
+      selectInput("input_type", "Restaurant type:",
+                  c("existing restaurant", "new restaurant")),
+      checkboxGroupInput("checkBox","Check all apply",
+                         c("Accepts credit cards", "Good for kids", "Has bike parking", "Has TV", "Has catering",
+                           "Has Wifi","Take reservations", " Has Takeout")),
+      selectInput("pricerange", "Price range:",
+                  c("1","2","3","4")),
+      selectInput("noiselevel", "Noise level:",
+                  c()),
+      selectInput("ambience","Ambience:",
+                  c())
+      
     )),
     
     column(3, wellPanel(
