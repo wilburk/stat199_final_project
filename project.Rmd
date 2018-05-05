@@ -4,6 +4,11 @@ author: "kimchi-stew"
 date: "May 4th, 2018"
 output: github_document
 ---
+###Set up
+```{r setup, include = FALSE}
+# set the echo option to FALSE to see how the document looks with the code suppressed
+knitr::opts_chunk$set(echo = FALSE)
+```
 
 ### Load Packages & Data
 
@@ -374,8 +379,7 @@ test_columns <- purrr::map(colnames(test_df), function(x) convert(x,food_attr)) 
   unite(attr,sep = "", remove = TRUE) %>% 
   count(attr) %>% 
   mutate(num_attr = str_count(attr, ","),
-          opt_score = num_attr*n, 
-          group = i) %>% 
+          opt_score = num_attr*n) %>% 
   filter(opt_score > 0) %>% 
   arrange(desc(num_attr * n)) %>% 
   pull(attr) %>% 
@@ -409,13 +413,13 @@ powerset <- function(vect) {
 
 find_best_cols <- function(tbl) {
   #pwrset <- powerset(colnames(tbl))
-  result <- map_df(test_columns, function(x) cols_eval11(x,tbl)) %>%               
+  result <- map_df(test_columns, function(x) cols_eval(x,tbl)) %>%               
     arrange(desc(opt_score)) %>% 
     select(attr, opt_score, n, num_attr)
   return(result)
 }
 
-all_cols <- find_best_cols11(test_df[1:22])
+all_cols <- find_best_cols(test_df[1:22])
 all_cols %>%
   ggplot(aes(x = num_attr, y = n, z = opt_score, color = (n*num_attr))) +
   geom_point(size = 4, alpha = 1) +
@@ -512,9 +516,7 @@ summary(lm_food)$r.squared
 lm_food
 ```
 
-Predicted stars = 3.86 – 0.03(BusinessAcceptsCreditCards) + 0.02(RestaurantsPriceRange2) – 0.09(GoodForKids) + 0.08(BikeParking) – 0.17(Alcoholfull_bar) – 0.06(Alcoholnone) + 0.04(HasTVTRUE) – 0.18(NoiseLevelloud) + 0.14(NoiseLevelquiet) – 0.43(NoiseLevelvery_loud) + 0.10(RestaurantsAttiredressy) + 0.21(RestaurantsAttireformal) – 0.10(RestaurantsGoodForGroupsTRUE) + 0.17(CatersTrue) – 0.02(WiFino) – 0.12(WiFipaid) + 0.02(RestaurantsReservationsTRUE) – 0.15(RestaurantsTakeOutTRUE) + 0.01(aggBusinessParkinglot) – 0.13(aggBusinessParkingNone) + 0.14(aggBusinessParkingstreet) – 0.13(aggBusinessParkingNone) + 0.14(aggBusinessParkingstreet) + 0.01(aggBusinessParkingValet) + 0.07(aggBusinessParkingvalidated) + 0.14(aggAmbienceclassy) + 0.11(aggAmbiencedivey) + 0.31(aggAmbiencehipster) + 0.24(aggAmbienceintimate) – 0.12(aggAmbienceNone) + 0.16(aggAmbienceromantic) – 0.20(aggAmbiencetouristy) + 0.21(aggAmbiencetrendy) + 0.18(aggAmbienceupscale) + 0.23(aggGoodForMealbrunch) + 0.11(aggGoodForMealdessert) + 0.20(aggGoodForMealdinner) + 0.02(aggGoodForMeallatenight) + 0.13(aggGoodForMeallunch) + 0.04(aggGoodForMealNone)
-
-This linear model suggests that in an alternate reality, if a restaurant demonstrated none of the above characteristics, the star rating would be 3.86. For each attribute a restaurant has, its rating increases or decreases according to each attribute’s coefficient multiplied by the value assigned to the attribute. The adjusted R-squared value for this linear model is 0.1584309, meaning that this model accounts for approximately 15.8% of the variability in the stars values. This low score indicates that the linear regression model insufficiently describes the data and has low predictive power.  
+This linear model suggests that in an alternate reality, if a restaurant demonstrated none of the above characteristics, the star rating would be 3.86. For each attribute a restaurant has, its rating increases or decreases according to each attribute’s coefficient multiplied by the value assigned to the attribute. The adjusted R-squared value for this linear model is 0.0.2330, meaning that this model accounts for approximately 23.3% of the variability in the stars values. This low score indicates that the linear regression model insufficiently describes the data and has low predictive power.  
   
 Next, we plotted two graph p1 and p2. P1 showed the predicted stars vs. acutal stars and we colored that data point by restaurant categories. P2 demonstrated the residuals vs. predicted stars. The center of the residual plot is approximately in the middle with data points radiating in a circular shape. 
 
@@ -647,17 +649,10 @@ best_row %>%
 ```
 
 ```{r rpart regression tree}
-<<<<<<< HEAD
-  fit <- rpart(stars ~ categories+BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal, method = "anova", data = food_reduce)
-=======
-
 
 fit <- rpart(stars ~ categories+BusinessAcceptsCreditCards+RestaurantsPriceRange2+GoodForKids+BikeParking+Alcohol+HasTV+NoiseLevel+RestaurantsAttire+RestaurantsGoodForGroups+Caters+WiFi+RestaurantsReservations+RestaurantsTakeOut+aggBusinessParking+aggAmbience+aggGoodForMeal, method = "anova", data = food_reduce)
->>>>>>> 5245242c042132aff887857451d2335a7ef98e47
 
 printcp(fit) # display the results 
-
-
 
 par(mfrow=c(1,2)) # two plots on one page 
 rsq.rpart(fit) # visualize cross-validation results  
@@ -669,5 +664,7 @@ plot(fit, uniform=TRUE,
 text(fit, use.n=TRUE, all=TRUE)
 
 ```
+
+
 
 
