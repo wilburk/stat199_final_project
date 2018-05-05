@@ -424,7 +424,25 @@ This linear model suggests that in an alternate reality, if a restaurant demonst
     
 Next, we plotted two graph p1 and p2. P1 showed the predicted stars vs. acutal stars and we colored that data point by restaurant categories. P2 demonstrated the residuals vs. predicted stars. The center of the residual plot is approximately in the middle with data points radiating in a circular shape. 
 ```{r predicted_residual}
+predicted_stars <- fitted(lm_food)
+stars_original <- food_reduce$stars
 
+p1 <-ggplot(lm_food,mapping =aes(stars_original,.fitted, color = factor(categories))) +
+  geom_jitter(alpha = 0.5, width = 0.5, height = 0.5 )+
+  labs(x = "Actual stars", y = "Predicted Stars",title = "Predicted vs Actual stars") +
+  theme_minimal() +
+  theme(legend.position="none")
+p1
+
+residual <- resid(lm_food)
+residual_jitter = jitter(residual,amount = .01)
+p2 <- ggplot(lm_food,mapping = aes(.fitted,residual_jitter, color = factor(categories))) +
+  geom_jitter(alpha = 0.5, width = 0.5, height = 0.5 )+
+  labs(x = "Predicted stars", y = "Residuals",title = "Residual plot of stars")+
+  theme_minimal() +
+  theme(legend.position="none")+
+  geom_hline(yintercept=0, linetype="dashed", color = "red")
+p2
 ```
 
 
